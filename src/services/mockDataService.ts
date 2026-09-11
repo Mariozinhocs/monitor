@@ -26,26 +26,26 @@ export interface ChannelStat {
 }
 
 export const DEFAULT_MONITOR_CONFIG: BrandMonitorConfig = {
-  brandName: 'Centro de Cooperação da Cidade',
+  brandName: 'Mario Henrique (@mariozinhocs)',
   primaryKeywords: [
-    'Centro de Cooperação da Cidade',
-    '#MonitoramentoUrbano',
-    'CCC Manaus',
-    'Defesa Civil',
-    'Trânsito & Vias'
+    '@mariozinhocs',
+    'Mario Henrique',
+    '#mariozinhocs',
+    'Sentinela AI',
+    'Dev Squad A-Team'
   ],
   sensitiveCrisisTerms: [
-    'Alagamento',
-    'Semáforo Quebrado',
-    'Acidente Grave',
-    'Deslizamento',
-    'Falta de Luz',
-    'Interdição'
+    'Crítica',
+    'Fake News',
+    'Golpe',
+    'Reclamação',
+    'Instabilidade',
+    'Vulnerabilidade'
   ],
   competitors: [
-    'Centro de Operações Rio (COR)',
-    'CET Trânsito',
-    'Central Integrada 190'
+    'Tech Influencers BR',
+    'Startups de IA',
+    'Dev Community'
   ],
   monitoredChannels: ['instagram', 'tiktok', 'twitter', 'youtube', 'news', 'reddit'],
   alertSensitivity: 'high'
@@ -58,7 +58,7 @@ export function isPublicSectorOrUrban(brandName: string): boolean {
     normalized.includes('centro de coop') ||
     normalized.includes('prefeitura') ||
     normalized.includes('governo') ||
-    normalized.includes('defesa') ||
+    normalized.includes('defesa civil') ||
     normalized.includes('trânsito') ||
     normalized.includes('transito') ||
     normalized.includes('guarda') ||
@@ -69,34 +69,81 @@ export function isPublicSectorOrUrban(brandName: string): boolean {
   );
 }
 
+export function isPersonalProfile(brandName: string): boolean {
+  const normalized = brandName.toLowerCase();
+  return (
+    normalized.includes('mario') ||
+    normalized.includes('mariozinhocs') ||
+    normalized.includes('@') ||
+    normalized.includes('henrique') ||
+    normalized.includes('perfil') ||
+    normalized.includes('dev') ||
+    normalized.includes('consultor') ||
+    normalized.includes('lider') ||
+    normalized.includes('líder')
+  );
+}
+
 export function generateBrandDataset(config: BrandMonitorConfig) {
-  const brandName = config.brandName || 'Centro de Cooperação da Cidade';
+  const brandName = config.brandName || 'Mario Henrique (@mariozinhocs)';
   const isUrban = isPublicSectorOrUrban(brandName);
+  const isPersonal = isPersonalProfile(brandName);
 
   const keywords = config.primaryKeywords.length > 0
     ? config.primaryKeywords
-    : [brandName, `#${brandName.replace(/\s+/g, '')}`, 'Operação', 'Atendimento'];
+    : [brandName, `@${brandName.replace(/\s+/g, '')}`, '#SentinelaAI', 'Inovação'];
 
   const sensitive = config.sensitiveCrisisTerms.length > 0
     ? config.sensitiveCrisisTerms
-    : ['Reclamação', 'Instabilidade', 'Denúncia', 'Protesto', 'Urgência'];
+    : ['Crítica', 'Fake News', 'Reclamação', 'Golpe', 'Vulnerabilidade'];
 
   // 1. BRAND OVERVIEW METRICS
   const brand: BrandOverview = {
     brandName,
-    reputationScore: isUrban ? 86 : 84,
-    totalMentions: isUrban ? 16420 : 14280,
-    growthRate24h: isUrban ? 22.4 : 18.5,
-    sentimentSplit: isUrban
-      ? { positive: 64, neutral: 22, negative: 10, critical: 4 }
-      : { positive: 62, neutral: 24, negative: 11, critical: 3 },
-    activeCrisisCount: 2,
-    estimatedReach: isUrban ? 3200000 : 2850000,
+    reputationScore: isUrban ? 86 : (isPersonal ? 94 : 88),
+    totalMentions: isUrban ? 16420 : (isPersonal ? 8940 : 12350),
+    growthRate24h: isUrban ? 22.4 : (isPersonal ? 34.8 : 18.5),
+    sentimentSplit: isPersonal
+      ? { positive: 82, neutral: 12, negative: 4, critical: 2 }
+      : (isUrban
+          ? { positive: 64, neutral: 22, negative: 10, critical: 4 }
+          : { positive: 70, neutral: 20, negative: 7, critical: 3 }),
+    activeCrisisCount: isPersonal ? 0 : 2,
+    estimatedReach: isPersonal ? 1450000 : (isUrban ? 3200000 : 2100000),
   };
 
   // 2. CRISIS ALERTS
   let alerts: CrisisAlert[] = [];
-  if (isUrban) {
+  if (isPersonal) {
+    alerts = [
+      {
+        id: `alt-${Date.now()}-1`,
+        title: `Menção em alta no Instagram sobre Arquitetura e Inovação do Sentinela.ai`,
+        description: `Carrossel técnico publicado marcando @mariozinhocs atingiu pico de compartilhamentos e comentários positivos de desenvolvedores e gestores.`,
+        severity: 'low',
+        channel: 'instagram',
+        mentionCount: 420,
+        negativeRatio: 3,
+        triggeredAt: 'Há 12 minutos',
+        status: 'active',
+        recommendedAction: `Interagir nos comentários e republicar nos stories para ampliar autoridade técnica.`,
+        affectedTopics: ['@mariozinhocs', 'SentinelaAI', '#TechLead', 'Inovação'],
+      },
+      {
+        id: `alt-${Date.now()}-2`,
+        title: `Radar Preventivo: Tentativa de uso indevido de imagem / perfil similar`,
+        description: `Algoritmo anti-phishing detectou conta recente com username similar monitorado por precaução.`,
+        severity: 'medium',
+        channel: 'instagram',
+        mentionCount: 15,
+        negativeRatio: 45,
+        triggeredAt: 'Há 1 hora',
+        status: 'investigating',
+        recommendedAction: 'Manter monitoramento de marca ativo e verificar selo de verificação.',
+        affectedTopics: ['Segurança', '@mariozinhocs', 'ProteçãoDeMarca'],
+      }
+    ];
+  } else if (isUrban) {
     alerts = [
       {
         id: `alt-${Date.now()}-1`,
@@ -123,48 +170,22 @@ export function generateBrandDataset(config: BrandMonitorConfig) {
         status: 'active',
         recommendedAction: `Atualizar painel de status do portal de transparência e destacar tempo recorde de intervenção das viaturas.`,
         affectedTopics: [sensitive[1] || 'Semáforo', 'Cruzamento', brandName],
-      },
-      {
-        id: `alt-${Date.now()}-3`,
-        title: `Repercussão em Fórum Comunitário sobre Iluminação e Segurança Preventiva`,
-        description: `Tópico em fórum regional discutindo a ampliação do cerco de câmeras inteligentes e vigilância integrada.`,
-        severity: 'medium',
-        channel: 'reddit',
-        mentionCount: 110,
-        negativeRatio: 35,
-        triggeredAt: 'Há 2 horas',
-        status: 'investigating',
-        recommendedAction: 'Consolidar relatório de ocorrências atendidas pela central para envio à assessoria de imprensa.',
-        affectedTopics: ['CâmerasInteligentes', 'SegurançaPública', 'Vigilância'],
       }
     ];
   } else {
     alerts = [
       {
         id: `alt-${Date.now()}-1`,
-        title: `Pico de Menções Críticas no TikTok sobre ${brandName}`,
-        description: `Vídeo com alta taxa de engajamento citando ${sensitive[0] || 'Instabilidade'} e tempo de resposta no atendimento.`,
-        severity: 'critical',
+        title: `Pico de Menções no TikTok sobre ${brandName}`,
+        description: `Vídeo com alta taxa de engajamento citando ${sensitive[0] || 'Instabilidade'} e tempo de resposta.`,
+        severity: 'high',
         channel: 'tiktok',
-        mentionCount: 840,
-        negativeRatio: 78,
+        mentionCount: 410,
+        negativeRatio: 62,
         triggeredAt: 'Há 18 minutos',
         status: 'active',
-        recommendedAction: `Publicar comunicado no perfil oficial e acionar time de suporte para contenção prioritária de ${brandName}.`,
-        affectedTopics: [sensitive[0] || 'Bug', 'Atendimento', brandName],
-      },
-      {
-        id: `alt-${Date.now()}-2`,
-        title: `Aumento de menções sensíveis no X (Twitter) citando ${sensitive[1] || 'Reclamações'}`,
-        description: `Aumento de 42% no volume de tweets de clientes buscando esclarecimentos e suporte rápido.`,
-        severity: 'high',
-        channel: 'twitter',
-        mentionCount: 310,
-        negativeRatio: 64,
-        triggeredAt: 'Há 1 hora',
-        status: 'active',
-        recommendedAction: 'Reforçar equipe de primeiro nível e disparar respostas personalizadas nas redes.',
-        affectedTopics: [sensitive[1] || 'Suporte', 'Demora', brandName],
+        recommendedAction: `Publicar comunicado no perfil oficial e acionar time de atendimento de ${brandName}.`,
+        affectedTopics: [sensitive[0] || 'Atendimento', brandName],
       }
     ];
   }
@@ -317,11 +338,157 @@ export function generateBrandDataset(config: BrandMonitorConfig) {
         }
       }
     ];
+  } else if (isPersonal) {
+    mentions = [
+      {
+        id: `men-${Date.now()}-1`,
+        channel: 'instagram',
+        author: {
+          name: 'Comunidade Tech Brasil',
+          username: '@comunidade_tech_br',
+          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          verified: true,
+          followersCount: 128000,
+        },
+        content: `Impressionante a nova arquitetura de social listening e IA semântica liderada pelo @mariozinhocs no Sentinela.ai! O sistema processa menções em milissegundos e antecipa crises com precisão cirúrgica. Parabéns pelo projeto! 🚀🔥 #TechLead #IA #DevSquad #SentinelaAI`,
+        mediaType: 'video',
+        mediaUrl: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=600&auto=format&fit=crop&q=80',
+        transcription: `[Áudio do Reel]: "...dá uma olhada no dashboard que o Mario Henrique e a equipe construíram. A fluidez da interface e a classificação de sentimentos em tempo real estão fantásticas..."`,
+        timestamp: 'Há 4 min',
+        likes: 1840,
+        comments: 142,
+        shares: 215,
+        sentiment: 'positive',
+        sentimentScore: 0.98,
+        riskLevel: 'low',
+        topics: ['@mariozinhocs', 'SentinelaAI', '#TechLead', 'Inovação'],
+        reachEstimate: 245000,
+        aiAnalysis: {
+          summary: 'Reel de alta repercussão com forte aprovação da comunidade dev validando a liderança técnica e o Sentinela.ai.',
+          emotion: 'Aprovação',
+          crisisIndicator: false,
+          suggestedAction: 'Agradecer nos comentários e repostar nos stories para fortalecer autoridade de mercado.',
+        }
+      },
+      {
+        id: `men-${Date.now()}-2`,
+        channel: 'instagram',
+        author: {
+          name: 'Gabriel Albuquerque',
+          username: '@gabriel_albuquerque_tech',
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+          verified: false,
+          followersCount: 18500,
+        },
+        content: `Testando em primeira mão o módulo de escuta aberta do Instagram desenvolvido pelo @mariozinhocs. A velocidade de indexação e a análise de risco são impressionantes. 👏⚡ #Inovacao #SocialListening`,
+        mediaType: 'image',
+        mediaUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80',
+        timestamp: 'Há 18 min',
+        likes: 620,
+        comments: 48,
+        shares: 31,
+        sentiment: 'positive',
+        sentimentScore: 0.96,
+        riskLevel: 'low',
+        topics: ['@mariozinhocs', 'EscutaAtiva', 'SocialListening'],
+        reachEstimate: 42000,
+        aiAnalysis: {
+          summary: 'Elogio espontâneo destacando agilidade e tecnologia do módulo de escuta ativa.',
+          emotion: 'Reconhecimento',
+          crisisIndicator: false,
+          suggestedAction: 'Curtir a publicação e enviar mensagem de agradecimento.',
+        }
+      },
+      {
+        id: `men-${Date.now()}-3`,
+        channel: 'twitter',
+        author: {
+          name: 'Dev Insider BR',
+          username: '@dev_insider',
+          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+          verified: true,
+          followersCount: 84000,
+        },
+        content: `Acompanhando o trabalho do @mariozinhocs no desenvolvimento de soluções autônomas e painéis de alta fidelidade. O padrão de engenharia de software empregado é referência! 💻💡 #FullStack #SoftwareEngineering`,
+        timestamp: 'Há 45 min',
+        likes: 310,
+        comments: 24,
+        shares: 56,
+        sentiment: 'positive',
+        sentimentScore: 0.95,
+        riskLevel: 'low',
+        topics: ['@mariozinhocs', 'EngenhariaDeSoftware', 'DevSquad'],
+        reachEstimate: 95000,
+        aiAnalysis: {
+          summary: 'Publicação no X destacando excelência em engenharia e consistência técnica.',
+          emotion: 'Admiração',
+          crisisIndicator: false,
+          suggestedAction: 'Retuitar e fixar no perfil.',
+        }
+      },
+      {
+        id: `men-${Date.now()}-4`,
+        channel: 'youtube',
+        author: {
+          name: 'Canal Arquitetura & Código',
+          username: '@arquitetura_codigo',
+          avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80',
+          verified: true,
+          followersCount: 160000,
+        },
+        content: `Review Completo: "Análise Técnica da Plataforma Sentinela.ai construída por Mario Henrique (@mariozinhocs) - O que torna esse radar de IA tão veloz?"`,
+        mediaType: 'video',
+        mediaUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&auto=format&fit=crop&q=80',
+        transcription: `[Áudio Transcrito por IA]: "...o pipeline criado pelo Mario Henrique combina uma interface reativa em React com análise preditiva e coletores sob demanda, permitindo escalar sem sobrecarregar a infra..."`,
+        timestamp: 'Há 2 horas',
+        likes: 2900,
+        comments: 185,
+        shares: 140,
+        sentiment: 'positive',
+        sentimentScore: 0.94,
+        riskLevel: 'low',
+        topics: ['@mariozinhocs', 'Arquitetura', 'SentinelaAI', 'Review'],
+        reachEstimate: 180000,
+        aiAnalysis: {
+          summary: 'Conteúdo aprofundado no YouTube validando autoridade técnica e desempenho do produto.',
+          emotion: 'Aprovação',
+          crisisIndicator: false,
+          suggestedAction: 'Comentar no vídeo agradecendo a cobertura e compartilhar com o squad.',
+        }
+      },
+      {
+        id: `men-${Date.now()}-5`,
+        channel: 'news',
+        author: {
+          name: 'Tech Portal Daily',
+          username: '@techportaldaily',
+          avatar: 'https://images.unsplash.com/photo-1586339949916-3e945abeb6e0?w=150&auto=format&fit=crop&q=80',
+          verified: true,
+          followersCount: 450000,
+        },
+        content: `Artigo Especial: "Como ferramentas de gestão de risco e social listening como o Sentinela.ai estão transformando a tomada de decisão de executivos e lideranças."`,
+        timestamp: 'Há 3 horas',
+        likes: 1200,
+        comments: 65,
+        shares: 310,
+        sentiment: 'positive',
+        sentimentScore: 0.92,
+        riskLevel: 'low',
+        topics: ['SentinelaAI', 'SocialListening', 'Inovação'],
+        reachEstimate: 620000,
+        aiAnalysis: {
+          summary: 'Matéria na imprensa especializada validando a tese de mercado da plataforma.',
+          emotion: 'Interesse',
+          crisisIndicator: false,
+          suggestedAction: 'Incluir no clipping executivo de assessoria.',
+        }
+      }
+    ];
   } else {
     mentions = [
       {
         id: `men-${Date.now()}-1`,
-        channel: 'twitter',
+        channel: 'instagram',
         author: {
           name: 'Lucas Brandão',
           username: '@lucas_brandao',
@@ -329,7 +496,7 @@ export function generateBrandDataset(config: BrandMonitorConfig) {
           verified: false,
           followersCount: 1820,
         },
-        content: `Impressionado com o atendimento da equipe da ${brandName}. Resolveram minha solicitação em poucos minutos! 🚀 #${keywords[0].replace(/\s+/g, '')}`,
+        content: `Impressionado com a qualidade dos serviços da ${brandName}. Resolveram minha solicitação em poucos minutos! 🚀 #${keywords[0].replace(/\s+/g, '')}`,
         timestamp: 'Há 5 min',
         likes: 18,
         comments: 3,
@@ -340,7 +507,7 @@ export function generateBrandDataset(config: BrandMonitorConfig) {
         topics: [keywords[0], 'Suporte', 'Agilidade'],
         reachEstimate: 3400,
         aiAnalysis: {
-          summary: `Elogio direto à agilidade do atendimento de ${brandName}.`,
+          summary: `Elogio direto à agilidade de ${brandName}.`,
           emotion: 'Agradecimento',
           crisisIndicator: false,
           suggestedAction: 'Agradecer e curtir post.',
@@ -350,13 +517,13 @@ export function generateBrandDataset(config: BrandMonitorConfig) {
         id: `men-${Date.now()}-2`,
         channel: 'tiktok',
         author: {
-          name: 'Tech & Lifestyle Reviews',
-          username: '@techlifestyle',
+          name: 'Tech & Reviews',
+          username: '@techreviews',
           avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
           verified: true,
           followersCount: 450000,
         },
-        content: `Pessoal, testando os novos recursos da ${brandName} hoje. Tive uma dúvida na integração, mas o time de suporte respondeu rápido.`,
+        content: `Testando os novos recursos da ${brandName} hoje. Experiência super fluida! 🔥`,
         mediaType: 'video',
         mediaUrl: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=600&auto=format&fit=crop&q=80',
         timestamp: 'Há 25 min',
@@ -369,7 +536,7 @@ export function generateBrandDataset(config: BrandMonitorConfig) {
         topics: [brandName, 'Review', 'Novidades'],
         reachEstimate: 210000,
         aiAnalysis: {
-          summary: `Review favorável de influenciador com boa base de seguidores sobre ${brandName}.`,
+          summary: `Review favorável de criador de conteúdo sobre ${brandName}.`,
           emotion: 'Interesse',
           crisisIndicator: false,
           suggestedAction: 'Interagir no comentário.',
@@ -379,24 +546,34 @@ export function generateBrandDataset(config: BrandMonitorConfig) {
   }
 
   // 4. DYNAMIC TOPIC CLOUD
-  const topics: TopicItem[] = [
-    { name: keywords[0] || brandName, count: isUrban ? 6240 : 5420, sentiment: 'positive', growth: '+28%' },
-    { name: sensitive[0] || (isUrban ? 'Alagamento' : '#BugApp'), count: isUrban ? 2310 : 1890, sentiment: 'critical', growth: '+125%' },
-    { name: keywords[1] || (isUrban ? '#TrânsitoSeguro' : 'IA Preditiva'), count: isUrban ? 1980 : 1650, sentiment: 'positive', growth: '+42%' },
-    { name: sensitive[1] || (isUrban ? 'Semáforos' : 'Suporte & Chat'), count: isUrban ? 1420 : 1120, sentiment: 'negative', growth: '+15%' },
-    { name: keywords[2] || (isUrban ? 'Defesa Civil' : 'Atualização V2'), count: isUrban ? 1350 : 980, sentiment: 'positive', growth: '+35%' },
-    { name: sensitive[2] || (isUrban ? 'Ocorrências' : 'Reclamações'), count: isUrban ? 890 : 410, sentiment: 'critical', growth: '+65%' },
-    { name: keywords[3] || (isUrban ? '#CidadeInteligente' : '#InovaçãoTech'), count: isUrban ? 1120 : 820, sentiment: 'positive', growth: '+20%' },
-  ];
+  const topics: TopicItem[] = isPersonal
+    ? [
+        { name: '@mariozinhocs', count: 4850, sentiment: 'positive', growth: '+45%' },
+        { name: 'SentinelaAI', count: 3420, sentiment: 'positive', growth: '+62%' },
+        { name: 'EngenhariaDeSoftware', count: 2190, sentiment: 'positive', growth: '+28%' },
+        { name: '#TechLead', count: 1850, sentiment: 'positive', growth: '+35%' },
+        { name: 'IA Preditiva', count: 1420, sentiment: 'positive', growth: '+50%' },
+        { name: 'FullStack', count: 980, sentiment: 'positive', growth: '+18%' },
+        { name: 'Inovação Digital', count: 870, sentiment: 'positive', growth: '+22%' },
+      ]
+    : [
+        { name: keywords[0] || brandName, count: isUrban ? 6240 : 5420, sentiment: 'positive', growth: '+28%' },
+        { name: sensitive[0] || (isUrban ? 'Alagamento' : '#BugApp'), count: isUrban ? 2310 : 1890, sentiment: 'critical', growth: '+125%' },
+        { name: keywords[1] || (isUrban ? '#TrânsitoSeguro' : 'IA Preditiva'), count: isUrban ? 1980 : 1650, sentiment: 'positive', growth: '+42%' },
+        { name: sensitive[1] || (isUrban ? 'Semáforos' : 'Suporte & Chat'), count: isUrban ? 1420 : 1120, sentiment: 'negative', growth: '+15%' },
+        { name: keywords[2] || (isUrban ? 'Defesa Civil' : 'Atualização V2'), count: isUrban ? 1350 : 980, sentiment: 'positive', growth: '+35%' },
+        { name: sensitive[2] || (isUrban ? 'Ocorrências' : 'Reclamações'), count: isUrban ? 890 : 410, sentiment: 'critical', growth: '+65%' },
+        { name: keywords[3] || (isUrban ? '#CidadeInteligente' : '#InovaçãoTech'), count: isUrban ? 1120 : 820, sentiment: 'positive', growth: '+20%' },
+      ];
 
   // 5. MULTICHANNEL DISTRIBUTION
   const channelList: ChannelStat[] = [
-    { id: 'instagram', name: 'Instagram', count: isUrban ? 5400 : 4820, percent: 33, color: 'text-pink-400', barBg: 'bg-pink-500' },
-    { id: 'tiktok', name: 'TikTok', count: isUrban ? 3950 : 3560, percent: 24, color: 'text-cyan-400', barBg: 'bg-cyan-500' },
-    { id: 'twitter', name: 'X / Twitter', count: isUrban ? 3820 : 2840, percent: 23, color: 'text-sky-400', barBg: 'bg-sky-500' },
-    { id: 'youtube', name: 'YouTube', count: isUrban ? 1820 : 1710, percent: 11, color: 'text-red-400', barBg: 'bg-red-500' },
-    { id: 'news', name: 'Portais & Notícias', count: isUrban ? 980 : 850, percent: 6, color: 'text-emerald-400', barBg: 'bg-emerald-500' },
-    { id: 'reddit', name: 'Reddit & Fóruns', count: isUrban ? 450 : 500, percent: 3, color: 'text-orange-400', barBg: 'bg-orange-500' },
+    { id: 'instagram', name: 'Instagram', count: isPersonal ? 4100 : (isUrban ? 5400 : 4820), percent: isPersonal ? 46 : 33, color: 'text-pink-400', barBg: 'bg-pink-500' },
+    { id: 'tiktok', name: 'TikTok', count: isPersonal ? 1200 : (isUrban ? 3950 : 3560), percent: isPersonal ? 14 : 24, color: 'text-cyan-400', barBg: 'bg-cyan-500' },
+    { id: 'twitter', name: 'X / Twitter', count: isPersonal ? 2350 : (isUrban ? 3820 : 2840), percent: isPersonal ? 26 : 23, color: 'text-sky-400', barBg: 'bg-sky-500' },
+    { id: 'youtube', name: 'YouTube', count: isPersonal ? 890 : (isUrban ? 1820 : 1710), percent: isPersonal ? 10 : 11, color: 'text-red-400', barBg: 'bg-red-500' },
+    { id: 'news', name: 'Portais & Notícias', count: isPersonal ? 320 : (isUrban ? 980 : 850), percent: isPersonal ? 3 : 6, color: 'text-emerald-400', barBg: 'bg-emerald-500' },
+    { id: 'reddit', name: 'Reddit & Fóruns', count: isPersonal ? 80 : (isUrban ? 450 : 500), percent: isPersonal ? 1 : 3, color: 'text-orange-400', barBg: 'bg-orange-500' },
   ];
 
   // Filter channels based on monitored config
@@ -409,14 +586,14 @@ export function generateBrandDataset(config: BrandMonitorConfig) {
 
   // 6. VOLUME TIMELINE
   const timeline: VolumePoint[] = [
-    { time: '00:00', volume: 160, positive: 110, negative: 25, critical: 3 },
-    { time: '03:00', volume: 90, positive: 65, negative: 15, critical: 2 },
-    { time: '06:00', volume: 340, positive: 220, negative: 50, critical: 8 },
-    { time: '09:00', volume: 1050, positive: 710, negative: 160, critical: 20 },
-    { time: '12:00', volume: 1680, positive: 1090, negative: 280, critical: 42 },
-    { time: '14:00', volume: 2450, positive: 1350, negative: 540, critical: 110 }, // Anomaly peak
-    { time: '16:00', volume: 1980, positive: 1220, negative: 390, critical: 55 },
-    { time: '18:00', volume: 1540, positive: 1060, negative: 240, critical: 25 },
+    { time: '00:00', volume: 160, positive: 130, negative: 15, critical: 1 },
+    { time: '03:00', volume: 90, positive: 75, negative: 10, critical: 1 },
+    { time: '06:00', volume: 340, positive: 280, negative: 20, critical: 2 },
+    { time: '09:00', volume: 1050, positive: 880, negative: 60, critical: 5 },
+    { time: '12:00', volume: 1680, positive: 1420, negative: 90, critical: 8 },
+    { time: '14:00', volume: 2450, positive: 2100, negative: 140, critical: 12 },
+    { time: '16:00', volume: 1980, positive: 1720, negative: 110, critical: 9 },
+    { time: '18:00', volume: 1540, positive: 1350, negative: 70, critical: 4 },
   ];
 
   return {
@@ -430,9 +607,70 @@ export function generateBrandDataset(config: BrandMonitorConfig) {
 }
 
 export function generateLiveScanMention(config: BrandMonitorConfig): Mention {
-  const brandName = config.brandName || 'Centro de Cooperação da Cidade';
+  const brandName = config.brandName || 'Mario Henrique (@mariozinhocs)';
   const isUrban = isPublicSectorOrUrban(brandName);
+  const isPersonal = isPersonalProfile(brandName);
   const keyword = config.primaryKeywords[0] || brandName;
+
+  if (isPersonal) {
+    const personalLiveSamples: Mention[] = [
+      {
+        id: `men-live-${Date.now()}-1`,
+        channel: 'instagram',
+        author: {
+          name: 'Comunidade Dev Manaus',
+          username: '@dev_manaus_oficial',
+          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          verified: true,
+          followersCount: 42000,
+        },
+        content: `Acabou de sair nos stories: @mariozinhocs apresentando as novas features do Sentinela.ai com escuta aberta para o Instagram! Parabéns pela inovação. 🚀👏 #${keyword.replace(/[@\s]/g, '')} #IA`,
+        timestamp: 'Agora mesmo',
+        likes: 95,
+        comments: 14,
+        shares: 22,
+        sentiment: 'positive',
+        sentimentScore: 0.99,
+        riskLevel: 'low',
+        topics: [keyword, 'SentinelaAI', '#DevManaus'],
+        reachEstimate: 18000,
+        aiAnalysis: {
+          summary: 'Menção em tempo real celebrando novidades apresentadas pelo perfil de Mario Henrique.',
+          emotion: 'Entusiasmo',
+          crisisIndicator: false,
+          suggestedAction: 'Interagir e repostar nos stories.',
+        }
+      },
+      {
+        id: `men-live-${Date.now()}-2`,
+        channel: 'instagram',
+        author: {
+          name: 'Renata Albuquerque',
+          username: '@renata_albuquerque_tech',
+          avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+          verified: false,
+          followersCount: 15400,
+        },
+        content: `Dica de ouro pra quem trabalha com gestão de crises e monitoramento: sigam o trabalho do @mariozinhocs! A visão de produto e automação é sensacional. 💡🔥`,
+        timestamp: 'Agora mesmo',
+        likes: 120,
+        comments: 18,
+        shares: 30,
+        sentiment: 'positive',
+        sentimentScore: 0.98,
+        riskLevel: 'low',
+        topics: [keyword, '#TechLeadership', 'Inovação'],
+        reachEstimate: 21000,
+        aiAnalysis: {
+          summary: 'Recomendação orgânica de perfil com alto engajamento no Instagram.',
+          emotion: 'Reconhecimento',
+          crisisIndicator: false,
+          suggestedAction: 'Curtir e agradecer nos comentários.',
+        }
+      }
+    ];
+    return personalLiveSamples[Math.floor(Math.random() * personalLiveSamples.length)];
+  }
 
   if (isUrban) {
     const liveSamples: Mention[] = [
@@ -462,33 +700,6 @@ export function generateLiveScanMention(config: BrandMonitorConfig): Mention {
           crisisIndicator: false,
           suggestedAction: 'Interagir e monitorar fluxo na região.',
         }
-      },
-      {
-        id: `men-live-${Date.now()}`,
-        channel: 'instagram',
-        author: {
-          name: 'Comunidade Zona Sul',
-          username: '@comunidade_zonasul',
-          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-          verified: false,
-          followersCount: 16800,
-        },
-        content: `Alerta aos moradores: Câmeras de monitoramento do ${brandName} identificaram início de retenção na bifurcação. Evitem o trecho nas próximas horas. 🌧️⚠️`,
-        timestamp: 'Agora mesmo',
-        likes: 85,
-        comments: 12,
-        shares: 34,
-        sentiment: 'neutral',
-        sentimentScore: 0.75,
-        riskLevel: 'medium',
-        topics: [brandName, 'AlertaPreventivo', 'Mobilidade'],
-        reachEstimate: 22000,
-        aiAnalysis: {
-          summary: 'Aviso comunitário preventivo replicando orientações da central.',
-          emotion: 'Alerta',
-          crisisIndicator: false,
-          suggestedAction: 'Manter vigilância ativa na região.',
-        }
       }
     ];
     return liveSamples[Math.floor(Math.random() * liveSamples.length)];
@@ -496,10 +707,10 @@ export function generateLiveScanMention(config: BrandMonitorConfig): Mention {
 
   return {
     id: `men-live-${Date.now()}`,
-    channel: 'twitter',
+    channel: 'instagram',
     author: {
-      name: 'Eduardo Silveira',
-      username: '@edu_silveira',
+      name: 'Lucas Brandão',
+      username: '@lucas_brandao',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
       verified: false,
       followersCount: 3100,
