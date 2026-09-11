@@ -81,36 +81,71 @@ export function BrandMonitorSetupModal({
     initialConfig?.alertSensitivity || 'high'
   );
 
+  const [instagramSessionId, setInstagramSessionId] = useState('');
+  const [isSavingSession, setIsSavingSession] = useState(false);
+  const [sessionStatusMsg, setSessionStatusMsg] = useState<string | null>(null);
+
   // Sincroniza o formulário com a configuração ativa sempre que a modal for aberta
   useEffect(() => {
     if (isOpen) {
-      const activeName = initialConfig?.brandName || brand.brandName || 'Centro de Cooperação da Cidade';
+      const activeName = initialConfig?.brandName || brand.brandName || 'Mario Henrique (@mariozinhocs)';
       setBrandName(activeName);
       setPrimaryKeywords(initialConfig?.primaryKeywords || [
         activeName,
-        '#MonitoramentoUrbano',
-        'Defesa Civil',
-        'Trânsito & Vias'
+        '#mariozinhocs',
+        'Mario Henrique',
+        'Sentinela AI'
       ]);
       setSensitiveTerms(initialConfig?.sensitiveCrisisTerms || [
-        'Alagamento',
-        'Semáforo Quebrado',
-        'Acidente Grave',
-        'Deslizamento',
-        'Falta de Luz',
-        'Interdição'
+        'Crítica',
+        'Fake News',
+        'Golpe',
+        'Reclamação',
+        'Instabilidade'
       ]);
       setCompetitors(initialConfig?.competitors || [
-        'Centro de Operações Rio (COR)',
-        'CET Trânsito',
-        'Central Integrada 190'
+        'Tech Influencers BR',
+        'Startups de IA'
       ]);
       setMonitoredChannels(initialConfig?.monitoredChannels || [
         'instagram', 'tiktok', 'twitter', 'youtube', 'news', 'reddit'
       ]);
       setAlertSensitivity(initialConfig?.alertSensitivity || 'high');
+
+      // Verifica status da sessão no backend
+      fetch('api/collector/session_manager.php')
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.has_session) {
+            setSessionStatusMsg(`✅ Sessão conectada (${data.session_preview})`);
+          }
+        })
+        .catch(() => {});
     }
   }, [isOpen, initialConfig, brand.brandName]);
+
+  const handleSaveInstagramSession = async () => {
+    if (!instagramSessionId.trim()) return;
+    setIsSavingSession(true);
+    setSessionStatusMsg(null);
+    try {
+      const res = await fetch('api/collector/session_manager.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionid: instagramSessionId.trim() })
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        setSessionStatusMsg('✅ Cookie de sessão salvo! Coletor autenticado com o Instagram.');
+      } else {
+        setSessionStatusMsg(`⚠️ ${data.message || 'Falha ao salvar sessão.'}`);
+      }
+    } catch (err: any) {
+      setSessionStatusMsg('⚠️ Erro de comunicação ao salvar sessão.');
+    } finally {
+      setIsSavingSession(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -383,6 +418,46 @@ export function BrandMonitorSetupModal({
                 );
               })}
             </div>
+          </div>
+
+          {/* Section 6: Conexão Direta ao Vivo do Instagram (Session / Cookie) */}
+          <div className="space-y-3 pt-2 border-t border-slate-800/80">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-pink-400" />
+                <span>6. Conexão ao Vivo do Instagram (Cookie de Sessão)</span>
+              </label>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-500/10 text-pink-400 border border-pink-500/30">
+                Opção 2 Ativa
+              </span>
+            </div>
+            
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Para capturar 100% dos posts, carrosséis e reels reais de qualquer perfil público sem bloqueios, insira o cookie <code className="text-pink-300 bg-slate-950 px-1 py-0.5 rounded">sessionid</code> de uma conta do Instagram (Chrome F12 &gt; Application &gt; Cookies &gt; instagram.com &gt; sessionid):
+            </p>
+
+            <div className="flex gap-2">
+              <input
+                type="password"
+                placeholder="Ex: 684920482%3Akf92... (ou cole o cookie completo)"
+                value={instagramSessionId}
+                onChange={(e) => setInstagramSessionId(e.target.value)}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500 transition-all font-mono"
+              />
+              <button
+                type="button"
+                onClick={handleSaveInstagramSession}
+                disabled={isSavingSession || !instagramSessionId.trim()}
+                className="px-4 py-2.5 rounded-xl bg-pink-600/20 hover:bg-pink-600/30 border border-pink-500/40 text-pink-300 text-xs font-bold transition-all disabled:opacity-50 flex items-center gap-1.5 shrink-0"
+              >
+                {isSavingSession ? 'Salvando...' : 'Conectar Sessão'}
+              </button>
+            </div>
+            {sessionStatusMsg && (
+              <p className="text-[11px] text-emerald-400 font-medium animate-fadeIn">
+                {sessionStatusMsg}
+              </p>
+            )}
           </div>
 
         </div>
