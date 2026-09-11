@@ -286,7 +286,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
                   type="url"
                   value={avatarUrl}
                   onChange={(e) => setAvatarUrl(e.target.value)}
-                  placeholder="https://github.com/mariozinhocs.png"
+                  placeholder="https://exemplo.com/avatar.jpg"
                   className="flex-1 rounded-xl bg-slate-900 border border-slate-700 focus:border-indigo-500 px-4 py-2.5 text-xs text-slate-100 outline-none transition-all"
                 />
               </div>
