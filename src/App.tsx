@@ -16,6 +16,7 @@ import { UserManagementView } from './components/admin/UserManagementView';
 import { LoginModal } from './components/auth/LoginModal';
 import { LandingPage } from './components/landing/LandingPage';
 import { BrandMonitorSetupModal, BrandMonitorConfig } from './components/settings/BrandMonitorSetupModal';
+import { InstagramServiceConnectModal } from './components/settings/InstagramServiceConnectModal';
 import { PlansComparisonModal } from './components/plans/PlansComparisonModal';
 import { SubscriptionPlan } from './types/plans';
 
@@ -115,6 +116,7 @@ export function App() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isMonitorSetupOpen, setIsMonitorSetupOpen] = useState(false);
   const [isPlansModalOpen, setIsPlansModalOpen] = useState(false);
+  const [isInstagramConnectOpen, setIsInstagramConnectOpen] = useState(false);
   const [selectedTopicFilter, setSelectedTopicFilter] = useState<string | undefined>();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -372,6 +374,7 @@ export function App() {
         onOpenCrisisCenter={() => setCurrentTab('crisis')}
         onOpenMonitorSetup={() => setIsMonitorSetupOpen(true)}
         onOpenPlans={() => setIsPlansModalOpen(true)}
+        onOpenInstagramConnect={() => setIsInstagramConnectOpen(true)}
         onNavigateTab={(tab) => setCurrentTab(tab as NavTab)}
         onLogout={handleLogout}
       />
@@ -592,6 +595,16 @@ export function App() {
           }
           setIsPlansModalOpen(false);
           showToast(`⚡ Plano atualizado com sucesso para: ${plan.name}! Recursos desbloqueados.`);
+        }}
+      />
+
+      {/* Modal de Conexão Headless do Robô Instagram */}
+      <InstagramServiceConnectModal
+        isOpen={isInstagramConnectOpen}
+        onClose={() => setIsInstagramConnectOpen(false)}
+        onConnectionSuccess={(igUser) => {
+          showToast(`✅ Robô Instagram conectado com sucesso como @${igUser}! Escuta 100% ativa.`);
+          handleTriggerScan();
         }}
       />
 

@@ -17,6 +17,7 @@ interface NavbarProps {
   onLogout?: () => void;
   onOpenMonitorSetup: () => void;
   onOpenPlans?: () => void;
+  onOpenInstagramConnect?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -32,7 +33,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onNavigateTab,
   onLogout,
   onOpenMonitorSetup,
-  onOpenPlans
+  onOpenPlans,
+  onOpenInstagramConnect
 }) => {
   const currentPlanName = currentUser?.plan || 'Enterprise';
 
@@ -101,6 +103,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isScanning ? 'animate-spin text-indigo-400' : 'text-slate-400'}`} />
             <span className="hidden sm:inline">{isScanning ? 'Varrendo Redes...' : 'Radar Ao Vivo'}</span>
+          </button>
+
+          {/* Instagram Robot Connect Button */}
+          <button
+            onClick={onOpenInstagramConnect}
+            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-pink-600/20 to-purple-600/20 hover:from-pink-600/30 hover:to-purple-600/30 border border-pink-500/30 px-3 py-1.5 text-xs font-semibold text-pink-300 hover:text-white transition-all shadow-sm group"
+            title="Conectar Robô Headless do Instagram para Escuta Aberta 100% Real"
+          >
+            <Instagram className="h-3.5 w-3.5 text-pink-400 group-hover:scale-110 transition-transform" />
+            <span className="hidden lg:inline">Robô Instagram</span>
           </button>
 
           {/* AI Insights Button */}
