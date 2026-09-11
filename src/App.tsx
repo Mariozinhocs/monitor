@@ -36,16 +36,79 @@ import { UserProfile, UserActivityLog, UserManagementMetrics } from './types/use
 export function App() {
   const [currentTab, setCurrentTab] = useState<NavTab>('dashboard');
   
-  // Configuração Ativa do Alvo de Monitoramento
-  const [monitorConfig, setMonitorConfig] = useState<BrandMonitorConfig>(DEFAULT_MONITOR_CONFIG);
+  // Configuração Ativa do Alvo de Monitoramento com Persistência em LocalStorage
+  const [monitorConfig, setMonitorConfig] = useState<BrandMonitorConfig>(() => {
+    try {
+      const saved = localStorage.getItem('sentinela_monitor_config');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error('Erro ao recuperar monitor_config do localStorage:', e);
+    }
+    return DEFAULT_MONITOR_CONFIG;
+  });
   
-  // Datasets Reativos
-  const [brand, setBrand] = useState(INITIAL_DATASET.brand);
-  const [alerts, setAlerts] = useState<CrisisAlert[]>(INITIAL_DATASET.alerts);
-  const [mentions, setMentions] = useState<Mention[]>(INITIAL_DATASET.mentions);
-  const [topics, setTopics] = useState<TopicItem[]>(INITIAL_DATASET.topics);
-  const [channels, setChannels] = useState<ChannelStat[]>(INITIAL_DATASET.channels);
-  const [timeline, setTimeline] = useState<VolumePoint[]>(INITIAL_DATASET.timeline);
+  // Datasets Reativos inicializados dinamicamente a partir do alvo configurado
+  const [brand, setBrand] = useState(() => {
+    try {
+      const saved = localStorage.getItem('sentinela_monitor_config');
+      if (saved) {
+        return generateBrandDataset(JSON.parse(saved)).brand;
+      }
+    } catch (e) {}
+    return INITIAL_DATASET.brand;
+  });
+
+  const [alerts, setAlerts] = useState<CrisisAlert[]>(() => {
+    try {
+      const saved = localStorage.getItem('sentinela_monitor_config');
+      if (saved) {
+        return generateBrandDataset(JSON.parse(saved)).alerts;
+      }
+    } catch (e) {}
+    return INITIAL_DATASET.alerts;
+  });
+
+  const [mentions, setMentions] = useState<Mention[]>(() => {
+    try {
+      const saved = localStorage.getItem('sentinela_monitor_config');
+      if (saved) {
+        return generateBrandDataset(JSON.parse(saved)).mentions;
+      }
+    } catch (e) {}
+    return INITIAL_DATASET.mentions;
+  });
+
+  const [topics, setTopics] = useState<TopicItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('sentinela_monitor_config');
+      if (saved) {
+        return generateBrandDataset(JSON.parse(saved)).topics;
+      }
+    } catch (e) {}
+    return INITIAL_DATASET.topics;
+  });
+
+  const [channels, setChannels] = useState<ChannelStat[]>(() => {
+    try {
+      const saved = localStorage.getItem('sentinela_monitor_config');
+      if (saved) {
+        return generateBrandDataset(JSON.parse(saved)).channels;
+      }
+    } catch (e) {}
+    return INITIAL_DATASET.channels;
+  });
+
+  const [timeline, setTimeline] = useState<VolumePoint[]>(() => {
+    try {
+      const saved = localStorage.getItem('sentinela_monitor_config');
+      if (saved) {
+        return generateBrandDataset(JSON.parse(saved)).timeline;
+      }
+    } catch (e) {}
+    return INITIAL_DATASET.timeline;
+  });
 
   const [isScanning, setIsScanning] = useState(false);
   const [isAISummaryOpen, setIsAISummaryOpen] = useState(false);
@@ -55,8 +118,18 @@ export function App() {
   const [selectedTopicFilter, setSelectedTopicFilter] = useState<string | undefined>();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Estado dos Usuários & Autenticação (Por padrão inicia deslogado para exibir a Landing Page)
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  // Estado dos Usuários & Autenticação (Persistente no localStorage após login)
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
+    try {
+      const saved = localStorage.getItem('sentinela_user');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error('Erro ao recuperar usuário autenticado:', e);
+    }
+    return null;
+  });
 
   const [usersList, setUsersList] = useState<UserProfile[]>([
     {
@@ -160,7 +233,11 @@ export function App() {
   // Handlers de Gestão de Usuários
   const handleUpdateProfile = async (updatedData: Partial<UserProfile>, currentPass?: string, newPass?: string) => {
     if (!currentUser) return;
-    setCurrentUser(prev => prev ? { ...prev, ...updatedData } : null);
+    const updated = { ...currentUser, ...updatedData };
+    try {
+      localStorage.setItem('sentinela_user', JSON.stringify(updated));
+    } catch (e) {}
+    setCurrentUser(updated);
     setUsersList(prev => prev.map(u => u.id === currentUser.id ? { ...u, ...updatedData } : u));
     setActivityLogs(prev => [
       { action: 'update_profile', details: 'Dados cadastrais atualizados', ip_address: '127.0.0.1', created_at: new Date().toLocaleString() },
@@ -199,8 +276,14 @@ export function App() {
     showToast(`🗑️ Usuário desativado do sistema.`);
   };
 
-  // Atualização Dinâmica do Alvo e Regeneração Contextual de Dados
+  // Atualização Dinâmica do Alvo e Regeneração Contextual de Dados com Persistência
   const handleSaveMonitorConfig = (newConfig: BrandMonitorConfig) => {
+    try {
+      localStorage.setItem('sentinela_monitor_config', JSON.stringify(newConfig));
+    } catch (e) {
+      console.error('Erro ao salvar monitor_config no localStorage:', e);
+    }
+
     setMonitorConfig(newConfig);
 
     // Gera dataset inteiramente coerente com o novo alvo
@@ -213,16 +296,39 @@ export function App() {
     setTimeline(newDataset.timeline);
 
     showToast(`🎯 Alvo atualizado: "${newConfig.brandName}"! ${newDataset.mentions.length} menções e dados atualizados.`);
+
+    // Dispara varredura em background no Instagram para o novo alvo
+    runSocialListeningScan(
+      newConfig.brandName,
+      newConfig.sensitiveCrisisTerms,
+      newConfig.monitoredChannels.length > 0 ? newConfig.monitoredChannels : ['instagram']
+    ).then((realMentions) => {
+      if (realMentions && realMentions.length > 0) {
+        setMentions(prev => [...realMentions, ...prev]);
+        setBrand(prev => ({
+          ...prev,
+          totalMentions: prev.totalMentions + realMentions.length,
+          reputationScore: Math.min(100, prev.reputationScore + 1)
+        }));
+      }
+    }).catch(() => {});
   };
 
   const handleLogout = () => {
+    try {
+      localStorage.removeItem('sentinela_user');
+    } catch (e) {}
     setCurrentUser(null);
     setCurrentTab('dashboard');
     showToast('👋 Sessão encerrada.');
   };
 
   const handleExploreDemo = () => {
-    setCurrentUser(usersList[0]);
+    const demoUser = usersList[0];
+    try {
+      localStorage.setItem('sentinela_user', JSON.stringify(demoUser));
+    } catch (e) {}
+    setCurrentUser(demoUser);
     showToast('⚡ Modo de Demonstração Ativado! Você está visualizando o ambiente do cliente.');
   };
 
@@ -240,6 +346,9 @@ export function App() {
           isOpen={isLoginModalOpen}
           onClose={() => setIsLoginModalOpen(false)}
           onLoginSuccess={(user) => {
+            try {
+              localStorage.setItem('sentinela_user', JSON.stringify(user));
+            } catch (e) {}
             setCurrentUser(user);
             setIsLoginModalOpen(false);
             showToast(`👋 Bem-vindo ao Sentinela.ai, @${user.username}!`);
@@ -454,6 +563,9 @@ export function App() {
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         onLoginSuccess={(user) => {
+          try {
+            localStorage.setItem('sentinela_user', JSON.stringify(user));
+          } catch (e) {}
           setCurrentUser(user);
           showToast(`👋 Bem-vindo de volta, @${user.username}!`);
         }}

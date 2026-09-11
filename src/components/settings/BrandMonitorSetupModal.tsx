@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Target, 
   Tag, 
@@ -80,6 +80,37 @@ export function BrandMonitorSetupModal({
   const [alertSensitivity, setAlertSensitivity] = useState<'low' | 'medium' | 'high'>(
     initialConfig?.alertSensitivity || 'high'
   );
+
+  // Sincroniza o formulário com a configuração ativa sempre que a modal for aberta
+  useEffect(() => {
+    if (isOpen) {
+      const activeName = initialConfig?.brandName || brand.brandName || 'Centro de Cooperação da Cidade';
+      setBrandName(activeName);
+      setPrimaryKeywords(initialConfig?.primaryKeywords || [
+        activeName,
+        '#MonitoramentoUrbano',
+        'Defesa Civil',
+        'Trânsito & Vias'
+      ]);
+      setSensitiveTerms(initialConfig?.sensitiveCrisisTerms || [
+        'Alagamento',
+        'Semáforo Quebrado',
+        'Acidente Grave',
+        'Deslizamento',
+        'Falta de Luz',
+        'Interdição'
+      ]);
+      setCompetitors(initialConfig?.competitors || [
+        'Centro de Operações Rio (COR)',
+        'CET Trânsito',
+        'Central Integrada 190'
+      ]);
+      setMonitoredChannels(initialConfig?.monitoredChannels || [
+        'instagram', 'tiktok', 'twitter', 'youtube', 'news', 'reddit'
+      ]);
+      setAlertSensitivity(initialConfig?.alertSensitivity || 'high');
+    }
+  }, [isOpen, initialConfig, brand.brandName]);
 
   if (!isOpen) return null;
 
