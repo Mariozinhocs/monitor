@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS `mencoes` (
   `sentimento_score` DECIMAL(4,3) DEFAULT 0.500,
   `nivel_risco` ENUM('low', 'medium', 'high', 'critical') NOT NULL DEFAULT 'low',
   `topicos_json` JSON NULL,
+  `permalink` TEXT NULL,
   `ai_resumo` TEXT NULL,
   `ai_emocao` VARCHAR(80) NULL,
   `ai_acao_sugerida` TEXT NULL,
@@ -49,7 +50,22 @@ CREATE TABLE IF NOT EXISTS `mencoes` (
   `criado_em` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX `idx_canal` (`canal`),
   INDEX `idx_sentimento` (`sentimento`),
-  INDEX `idx_nivel_risco` (`nivel_risco`)
+  INDEX `idx_nivel_risco` (`nivel_risco`),
+  INDEX `idx_criado_em` (`criado_em`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 2.1 Tabela de Histórico de Varreduras (Coleta Jobs)
+CREATE TABLE IF NOT EXISTS `coleta_jobs` (
+  `id` VARCHAR(36) PRIMARY KEY,
+  `canal` VARCHAR(50) NOT NULL,
+  `termo_busca` VARCHAR(255) NOT NULL,
+  `status` ENUM('running', 'completed', 'failed') NOT NULL DEFAULT 'completed',
+  `posts_encontrados` INT DEFAULT 0,
+  `detalhes_json` JSON NULL,
+  `iniciado_em` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `finalizado_em` TIMESTAMP NULL,
+  INDEX `idx_canal_job` (`canal`),
+  INDEX `idx_status_job` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 3. Tabela de Alertas de Crise
