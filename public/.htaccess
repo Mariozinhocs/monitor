@@ -1,0 +1,33 @@
+# Configuração de Roteamento SPA & Prevenção de Cache Agressivo - Sentinela.ai
+# Squad A-Team | Mario Henrique & Antigravity AI
+# "si vis pacem para bellum"
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Não reescreve requisições para a API ou arquivos físicos reais
+    RewriteCond %{REQUEST_URI} ^/api/ [NC]
+    RewriteRule ^ - [L]
+
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Redireciona rotas SPA para index.html
+    RewriteRule ^ index.html [L]
+</IfModule>
+
+# Desativa cache de index.html para que novas versões do Vite carreguem sempre no Chrome
+<IfModule mod_headers.c>
+    <FilesMatch "\.(html|htm)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+
+    # Ativa cache com hash para arquivos estáticos em assets
+    <FilesMatch "\.(js|css|svg|png|jpg|jpeg|gif|woff2?)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
