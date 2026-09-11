@@ -1,24 +1,44 @@
-# Script de Deploy Automatizado Hostinger - Sentinela (monitor.hubdigital360.com)
+# Script de Deploy Automatizado Hostinger - Sentinela (sentinela.hubdigital360.com)
 # Squad A-Team | Mario Henrique (PO) & Antigravity AI
 
-$FtpServer   = "ftp.monitor.hubdigital360.com"
-$FtpUser     = "u576215103.monitor"
-$FtpPass     = "U=w>T@i4"
-$FtpRemoteDir= "/home/u576215103/domains/monitor.hubdigital360.com/public_html"
-$SiteUrl     = "https://monitor.hubdigital360.com"
+$env:Path = "C:\Program Files\nodejs;" + $env:Path
+
+$FtpServer   = "82.25.72.209"
+$FtpUser     = "u576215103.sentinela.hubdigital360.com"
+$FtpPass     = "#kppfF=@/cbnM9^b"
+$FtpRemoteDir= ""
+$SiteUrl     = "https://sentinela.hubdigital360.com"
 
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host " 🚀 INICIANDO DEPLOY EM PRODUÇÃO: $SiteUrl " -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
-# 1. Compila o Frontend React com Vite
-Write-Host "`n[1/4] Compilando Frontend React (Vite)..." -ForegroundColor Yellow
-npx vite build
+# 1. Compila o Frontend React com Vite no SSD Local (evita travamentos no Google Drive)
+Write-Host "`n[1/4] Compilando Frontend React em disco SSD local..." -ForegroundColor Yellow
+$tempBuild = Join-Path $env:TEMP "sentinela_build"
+if (Test-Path $tempBuild) { Remove-Item -Recurse -Force $tempBuild -ErrorAction SilentlyContinue }
+New-Item -ItemType Directory -Path $tempBuild -Force | Out-Null
 
-if ($LASTEXITCODE -ne 0) {
+Copy-Item -Recurse -Force "src", "public", "index.html", "package.json", "tsconfig.json", "vite.config.ts", "tailwind.config.js", "postcss.config.js" "$tempBuild/"
+
+$npmCmd = "C:\Program Files\nodejs\npm.cmd"
+$npxCmd = "C:\Program Files\nodejs\npx.cmd"
+
+Push-Location $tempBuild
+try {
+    if (Test-Path $npmCmd) { & $npmCmd install --no-audit --no-fund } else { npm install --no-audit --no-fund }
+    if (Test-Path $npxCmd) { & $npxCmd vite build } else { npx vite build }
+} finally {
+    Pop-Location
+}
+
+if (-not (Test-Path "$tempBuild\dist")) {
     Write-Host "❌ Erro ao compilar o frontend React com Vite." -ForegroundColor Red
     exit 1
 }
+
+if (Test-Path "dist") { Remove-Item -Recurse -Force "dist" -ErrorAction SilentlyContinue }
+Copy-Item -Recurse -Force "$tempBuild\dist" "dist"
 
 # 2. Prepara Pasta de Pacote de Deploy
 $deployDir = "deploy_package"

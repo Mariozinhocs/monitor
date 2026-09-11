@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { VOLUME_TIMELINE_DATA } from '../../services/mockDataService';
-import { AlertCircle, Flame, Clock } from 'lucide-react';
+import { VolumePoint, VOLUME_TIMELINE_DATA } from '../../services/mockDataService';
+import { Flame, Clock } from 'lucide-react';
 
-export const VolumeTimelineChart: React.FC = () => {
-  const [selectedPoint, setSelectedPoint] = useState<number | null>(5); // Ponto das 14:00 selecionado por padrão
+interface VolumeTimelineChartProps {
+  timeline?: VolumePoint[];
+}
 
-  const maxVolume = Math.max(...VOLUME_TIMELINE_DATA.map(d => d.volume));
+export const VolumeTimelineChart: React.FC<VolumeTimelineChartProps> = ({ timeline }) => {
+  const data = timeline && timeline.length > 0 ? timeline : VOLUME_TIMELINE_DATA;
+  const [selectedPoint, setSelectedPoint] = useState<number | null>(Math.min(5, data.length - 1));
+
+  const maxVolume = Math.max(...data.map(d => d.volume), 1);
 
   return (
     <div className="glass-panel rounded-2xl p-5">
@@ -42,7 +47,7 @@ export const VolumeTimelineChart: React.FC = () => {
 
       {/* Bar Chart Visualization */}
       <div className="h-48 flex items-end justify-between gap-2 sm:gap-4 pt-6 pb-2 border-b border-slate-800">
-        {VOLUME_TIMELINE_DATA.map((item, index) => {
+        {data.map((item, index) => {
           const heightPercent = (item.volume / maxVolume) * 100;
           const isAnomaly = item.time === '14:00';
           const isSelected = selectedPoint === index;
@@ -96,19 +101,19 @@ export const VolumeTimelineChart: React.FC = () => {
       </div>
 
       {/* Selected Point Details */}
-      {selectedPoint !== null && (
+      {selectedPoint !== null && data[selectedPoint] && (
         <div className="mt-4 flex flex-wrap items-center justify-between rounded-xl bg-slate-900/60 border border-slate-800/80 p-3 text-xs">
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-slate-400" />
             <span className="text-slate-400">Horário:</span>
-            <span className="font-bold text-white">{VOLUME_TIMELINE_DATA[selectedPoint].time}</span>
+            <span className="font-bold text-white">{data[selectedPoint].time}</span>
           </div>
 
           <div className="flex items-center gap-4">
-            <span>Volume: <strong className="text-white">{VOLUME_TIMELINE_DATA[selectedPoint].volume} posts</strong></span>
-            <span className="text-emerald-400">Positivo: <strong>{VOLUME_TIMELINE_DATA[selectedPoint].positive}</strong></span>
-            <span className="text-amber-400">Negativo: <strong>{VOLUME_TIMELINE_DATA[selectedPoint].negative}</strong></span>
-            <span className="text-rose-400">Crítico: <strong>{VOLUME_TIMELINE_DATA[selectedPoint].critical}</strong></span>
+            <span>Volume: <strong className="text-white">{data[selectedPoint].volume} posts</strong></span>
+            <span className="text-emerald-400">Positivo: <strong>{data[selectedPoint].positive}</strong></span>
+            <span className="text-amber-400">Negativo: <strong>{data[selectedPoint].negative}</strong></span>
+            <span className="text-rose-400">Crítico: <strong>{data[selectedPoint].critical}</strong></span>
           </div>
         </div>
       )}

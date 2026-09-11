@@ -11,24 +11,87 @@ import { CrisisCenter } from './components/crisis/CrisisCenter';
 import { AIExecutiveSummaryModal } from './components/insights/AIExecutiveSummaryModal';
 import { AlertRulesModal } from './components/settings/AlertRulesModal';
 import { BenchmarkView } from './components/benchmarks/BenchmarkView';
+import { UserProfileView } from './components/user/UserProfileView';
+import { UserManagementView } from './components/admin/UserManagementView';
+import { LoginModal } from './components/auth/LoginModal';
+import { LandingPage } from './components/landing/LandingPage';
+import { BrandMonitorSetupModal, BrandMonitorConfig } from './components/settings/BrandMonitorSetupModal';
+import { PlansComparisonModal } from './components/plans/PlansComparisonModal';
+import { SubscriptionPlan } from './types/plans';
 
 import { 
-  INITIAL_BRAND, 
-  INITIAL_ALERTS, 
-  INITIAL_MENTIONS 
+  DEFAULT_MONITOR_CONFIG,
+  INITIAL_DATASET,
+  generateBrandDataset,
+  generateLiveScanMention,
+  TopicItem,
+  ChannelStat,
+  VolumePoint
 } from './services/mockDataService';
 import { generateExecutiveReport } from './services/aiInsightsService';
 import { Mention, CrisisAlert } from './types/monitor';
+import { UserProfile, UserActivityLog, UserManagementMetrics } from './types/user';
 
 export function App() {
   const [currentTab, setCurrentTab] = useState<NavTab>('dashboard');
-  const [brand, setBrand] = useState(INITIAL_BRAND);
-  const [alerts, setAlerts] = useState<CrisisAlert[]>(INITIAL_ALERTS);
-  const [mentions, setMentions] = useState<Mention[]>(INITIAL_MENTIONS);
+  
+  // Configuração Ativa do Alvo de Monitoramento
+  const [monitorConfig, setMonitorConfig] = useState<BrandMonitorConfig>(DEFAULT_MONITOR_CONFIG);
+  
+  // Datasets Reativos
+  const [brand, setBrand] = useState(INITIAL_DATASET.brand);
+  const [alerts, setAlerts] = useState<CrisisAlert[]>(INITIAL_DATASET.alerts);
+  const [mentions, setMentions] = useState<Mention[]>(INITIAL_DATASET.mentions);
+  const [topics, setTopics] = useState<TopicItem[]>(INITIAL_DATASET.topics);
+  const [channels, setChannels] = useState<ChannelStat[]>(INITIAL_DATASET.channels);
+  const [timeline, setTimeline] = useState<VolumePoint[]>(INITIAL_DATASET.timeline);
+
   const [isScanning, setIsScanning] = useState(false);
   const [isAISummaryOpen, setIsAISummaryOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isMonitorSetupOpen, setIsMonitorSetupOpen] = useState(false);
+  const [isPlansModalOpen, setIsPlansModalOpen] = useState(false);
   const [selectedTopicFilter, setSelectedTopicFilter] = useState<string | undefined>();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Estado dos Usuários & Autenticação (Por padrão inicia deslogado para exibir a Landing Page)
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+
+  const [usersList, setUsersList] = useState<UserProfile[]>([
+    {
+      id: 1,
+      username: 'mariozinhocs',
+      email: 'mariozinhocs@gmail.com',
+      role: 'admin',
+      plan: 'enterprise',
+      plan_status: 'active',
+      avatar_url: 'https://github.com/mariozinhocs.png',
+      timezone: 'America/Sao_Paulo',
+      created_at: '2026-09-10 20:00:00'
+    },
+    {
+      id: 2,
+      username: 'admin',
+      email: 'admin@sentinela.ai',
+      role: 'admin',
+      plan: 'enterprise',
+      plan_status: 'active',
+      avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      timezone: 'America/Sao_Paulo',
+      created_at: '2026-09-10 20:00:00'
+    }
+  ]);
+
+  const [activityLogs, setActivityLogs] = useState<UserActivityLog[]>([
+    { action: 'user_login', details: 'Sessão iniciada com sucesso', ip_address: '127.0.0.1', created_at: '2026-09-10 20:15:00' },
+    { action: 'system_setup', details: 'Banco de dados instalado e tabelas criadas', ip_address: '82.25.72.209', created_at: '2026-09-10 20:10:00' }
+  ]);
+
+  const metrics: UserManagementMetrics = {
+    total_users: usersList.length,
+    active_users: usersList.filter(u => u.plan_status === 'active').length,
+    admin_count: usersList.filter(u => u.role === 'admin').length
+  };
 
   const activeAlerts = alerts.filter(a => a.status === 'active');
   const executiveReport = generateExecutiveReport(brand, mentions, alerts);
@@ -38,40 +101,13 @@ export function App() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Simulação de Varredura Radar em Tempo Real
+  // Varredura Radar em Tempo Real Contextual
   const handleTriggerScan = () => {
     setIsScanning(true);
-    showToast('📡 Radar Sentinela ativado: Varrendo Instagram, TikTok, X, YouTube e Notícias...');
+    showToast(`📡 Radar Sentinela ativado: Varrendo redes para "${monitorConfig.brandName}"...`);
 
     setTimeout(() => {
-      // Injeta uma nova menção em tempo real
-      const newLiveMention: Mention = {
-        id: `men-${Date.now()}`,
-        channel: 'twitter',
-        author: {
-          name: 'Lucas Brandão',
-          username: '@lucas_brandao',
-          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-          verified: false,
-          followersCount: 1820,
-        },
-        content: 'Impressionado com a rapidez da equipe do @SentinelaTech no suporte. Resolveram meu acesso em 5 minutos! 👏🚀',
-        timestamp: 'Agora mesmo',
-        likes: 14,
-        comments: 2,
-        shares: 1,
-        sentiment: 'positive',
-        sentimentScore: 0.96,
-        riskLevel: 'low',
-        topics: ['#SuporteNota10', 'Sentinela.ai', 'Agilidade'],
-        reachEstimate: 3200,
-        aiAnalysis: {
-          summary: 'Elogio direto ao tempo de resposta do suporte pós-resolução.',
-          emotion: 'Agradecimento',
-          crisisIndicator: false,
-          suggestedAction: 'Curtir e responder com emoji de agradecimento.',
-        }
-      };
+      const newLiveMention = generateLiveScanMention(monitorConfig);
 
       setMentions(prev => [newLiveMention, ...prev]);
       setBrand(prev => ({
@@ -80,8 +116,8 @@ export function App() {
         reputationScore: Math.min(100, prev.reputationScore + 1)
       }));
       setIsScanning(false);
-      showToast('✅ Varredura concluída: 1 nova menção capturada e indexada com IA!');
-    }, 2200);
+      showToast(`✅ Varredura concluída: 1 nova menção capturada e indexada com IA para "${monitorConfig.brandName}"!`);
+    }, 1800);
   };
 
   const handleResolveAlert = (alertId: string) => {
@@ -100,34 +136,134 @@ export function App() {
     showToast(`Filtrando feed de menções pelo tópico: #${topic}`);
   };
 
+  // Handlers de Gestão de Usuários
+  const handleUpdateProfile = async (updatedData: Partial<UserProfile>, currentPass?: string, newPass?: string) => {
+    if (!currentUser) return;
+    setCurrentUser(prev => prev ? { ...prev, ...updatedData } : null);
+    setUsersList(prev => prev.map(u => u.id === currentUser.id ? { ...u, ...updatedData } : u));
+    setActivityLogs(prev => [
+      { action: 'update_profile', details: 'Dados cadastrais atualizados', ip_address: '127.0.0.1', created_at: new Date().toLocaleString() },
+      ...prev
+    ]);
+    showToast('✅ Perfil atualizado com sucesso.');
+  };
+
+  const handleCreateUser = async (newUser: { username: string; email: string; password: string; role: 'admin' | 'user'; plan: 'basic' | 'pro' | 'enterprise'; avatar_url?: string }) => {
+    const created: UserProfile = {
+      id: Date.now(),
+      username: newUser.username,
+      email: newUser.email,
+      role: newUser.role,
+      plan: newUser.plan,
+      plan_status: 'active',
+      avatar_url: newUser.avatar_url,
+      timezone: 'America/Sao_Paulo',
+      created_at: new Date().toLocaleString()
+    };
+    setUsersList(prev => [created, ...prev]);
+    showToast(`👤 Usuário @${newUser.username} cadastrado com sucesso.`);
+  };
+
+  const handleUpdateUser = async (updatedUser: Partial<UserProfile> & { id: number }) => {
+    setUsersList(prev => prev.map(u => u.id === updatedUser.id ? { ...u, ...updatedUser } : u));
+    showToast(`✏️ Permissões atualizadas com sucesso.`);
+  };
+
+  const handleResetUserPassword = async (userId: number, newPass: string) => {
+    showToast(`🔑 Senha do usuário ID #${userId} redefinida.`);
+  };
+
+  const handleDeleteUser = async (userId: number) => {
+    setUsersList(prev => prev.filter(u => u.id !== userId));
+    showToast(`🗑️ Usuário desativado do sistema.`);
+  };
+
+  // Atualização Dinâmica do Alvo e Regeneração Contextual de Dados
+  const handleSaveMonitorConfig = (newConfig: BrandMonitorConfig) => {
+    setMonitorConfig(newConfig);
+
+    // Gera dataset inteiramente coerente com o novo alvo
+    const newDataset = generateBrandDataset(newConfig);
+    setBrand(newDataset.brand);
+    setAlerts(newDataset.alerts);
+    setMentions(newDataset.mentions);
+    setTopics(newDataset.topics);
+    setChannels(newDataset.channels);
+    setTimeline(newDataset.timeline);
+
+    showToast(`🎯 Alvo atualizado: "${newConfig.brandName}"! ${newDataset.mentions.length} menções e dados atualizados.`);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setCurrentTab('dashboard');
+    showToast('👋 Sessão encerrada.');
+  };
+
+  const handleExploreDemo = () => {
+    setCurrentUser(usersList[0]);
+    showToast('⚡ Modo de Demonstração Ativado! Você está visualizando o ambiente do cliente.');
+  };
+
+  // Se não estiver autenticado, exibe a Landing Page mascarando o painel interno
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-[#0b0f19] text-slate-100 selection:bg-indigo-500 selection:text-white">
+        <LandingPage
+          onOpenLogin={() => setIsLoginModalOpen(true)}
+          onExploreDemo={handleExploreDemo}
+        />
+
+        {/* Modal de Autenticação Login */}
+        <LoginModal
+          isOpen={isLoginModalOpen}
+          onClose={() => setIsLoginModalOpen(false)}
+          onLoginSuccess={(user) => {
+            setCurrentUser(user);
+            setIsLoginModalOpen(false);
+            showToast(`👋 Bem-vindo ao Sentinela.ai, @${user.username}!`);
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#0b0f19] text-slate-100 selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
       
       {/* Top Navbar */}
       <Navbar
         brand={brand}
+        activeAlertCount={activeAlerts.length}
         isScanning={isScanning}
+        currentUser={currentUser}
         onTriggerScan={handleTriggerScan}
         onOpenAISummary={() => setIsAISummaryOpen(true)}
         onOpenCrisisCenter={() => setCurrentTab('crisis')}
-        activeAlertCount={activeAlerts.length}
+        onOpenMonitorSetup={() => setIsMonitorSetupOpen(true)}
+        onOpenPlans={() => setIsPlansModalOpen(true)}
+        onNavigateTab={(tab) => setCurrentTab(tab as NavTab)}
+        onLogout={handleLogout}
       />
 
-      {/* Main Layout Body */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* Main Container Layout */}
+      <div className="flex-1 flex max-w-7xl w-full mx-auto p-4 sm:p-6 gap-6">
         
-        {/* Sidebar */}
+        {/* Sidebar Lateral */}
         <Sidebar
           currentTab={currentTab}
           onSelectTab={setCurrentTab}
           activeCrisisCount={activeAlerts.length}
           totalMentionsCount={mentions.length}
+          isAdmin={currentUser?.role === 'admin'}
+          userPlan={currentUser?.plan}
+          onOpenPlans={() => setIsPlansModalOpen(true)}
         />
 
-        {/* Content View Container */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6">
+        {/* Dynamic Content Views */}
+        <main className="flex-1 min-w-0 space-y-6">
           
-          {/* Toast Notification */}
+          {/* Toast Notification Alert */}
           {toastMessage && (
             <div className="fixed bottom-6 right-6 z-50 rounded-2xl border border-indigo-500/40 bg-slate-900/95 backdrop-blur-xl px-4 py-3 text-xs font-semibold text-white shadow-2xl shadow-indigo-950/60 flex items-center gap-3 animate-fadeIn">
               <span>{toastMessage}</span>
@@ -144,20 +280,20 @@ export function App() {
               {/* Grid 2 Colunas: Sentimento & Volume Timeline */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <SentimentGauge sentiment={brand.sentimentSplit} />
-                <VolumeTimelineChart />
+                <VolumeTimelineChart timeline={timeline} />
               </div>
 
               {/* Grid 2 Colunas: Canais & Nuvem de Tópicos */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <ChannelDistribution />
-                <TopicCloud onSelectTopic={handleSelectTopicFromCloud} />
+                <ChannelDistribution channels={channels} />
+                <TopicCloud topics={topics} onSelectTopic={handleSelectTopicFromCloud} />
               </div>
 
               {/* Prévia do Feed de Social Listening */}
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
                   <h3 className="text-base font-bold font-heading text-white">
-                    Feed de Menções em Tempo Real
+                    Feed de Menções em Tempo Real ({brand.brandName})
                   </h3>
                   <button
                     onClick={() => setCurrentTab('listening')}
@@ -179,7 +315,7 @@ export function App() {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-bold font-heading text-white">
-                    Feed de Social Listening & Menções Multicanais
+                    Feed de Social Listening & Menções Multicanais ({brand.brandName})
                   </h2>
                   <p className="text-xs text-slate-400 mt-0.5">
                     Transcrições de vídeo/áudio, sentimento de postagens e diagnóstico de IA em tempo real.
@@ -209,7 +345,7 @@ export function App() {
               <div className="glass-panel rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-bold font-heading text-white">
-                    AI Insights & Inteligência de Narrativa
+                    AI Insights & Inteligência de Narrativa ({brand.brandName})
                   </h2>
                   <p className="text-xs text-slate-400 mt-1">
                     Análise qualitativa profunda dos dados coletados nas redes, correlação de sentimento e recomendações de PR.
@@ -253,7 +389,34 @@ export function App() {
           {currentTab === 'rules' && <AlertRulesModal />}
 
           {/* TAB 6: Benchmarks de Concorrentes */}
-          {currentTab === 'benchmarks' && <BenchmarkView />}
+          {currentTab === 'benchmarks' && (
+            <BenchmarkView 
+              brandName={brand.brandName} 
+              competitorNames={monitorConfig.competitors} 
+            />
+          )}
+
+          {/* TAB 7: Painel do Usuário (Meu Perfil) */}
+          {currentTab === 'user-profile' && currentUser && (
+            <UserProfileView
+              user={currentUser}
+              onUpdateProfile={handleUpdateProfile}
+              activityLogs={activityLogs}
+              onOpenPlans={() => setIsPlansModalOpen(true)}
+            />
+          )}
+
+          {/* TAB 8: Painel de Gestão de Usuários (Apenas Admin) */}
+          {currentTab === 'user-management' && currentUser?.role === 'admin' && (
+            <UserManagementView
+              usersList={usersList}
+              metrics={metrics}
+              onCreateUser={handleCreateUser}
+              onUpdateUser={handleUpdateUser}
+              onResetUserPassword={handleResetUserPassword}
+              onDeleteUser={handleDeleteUser}
+            />
+          )}
 
         </main>
       </div>
@@ -263,6 +426,40 @@ export function App() {
         isOpen={isAISummaryOpen}
         onClose={() => setIsAISummaryOpen(false)}
         report={executiveReport}
+      />
+
+      {/* Modal de Autenticação Login */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          showToast(`👋 Bem-vindo de volta, @${user.username}!`);
+        }}
+      />
+
+      {/* Modal de Definição de Marca & O Que Monitorar */}
+      <BrandMonitorSetupModal
+        isOpen={isMonitorSetupOpen}
+        onClose={() => setIsMonitorSetupOpen(false)}
+        brand={brand}
+        initialConfig={monitorConfig}
+        onSaveConfig={handleSaveMonitorConfig}
+      />
+
+      {/* Modal de Catálogo de Serviços & Comparativo de Planos */}
+      <PlansComparisonModal
+        isOpen={isPlansModalOpen}
+        onClose={() => setIsPlansModalOpen(false)}
+        currentPlan={currentUser?.plan}
+        onSelectUpgrade={(plan) => {
+          if (currentUser) {
+            setCurrentUser(prev => prev ? { ...prev, plan: plan.id as any } : null);
+            setUsersList(prev => prev.map(u => u.id === currentUser.id ? { ...u, plan: plan.id as any } : u));
+          }
+          setIsPlansModalOpen(false);
+          showToast(`⚡ Plano atualizado com sucesso para: ${plan.name}! Recursos desbloqueados.`);
+        }}
       />
 
     </div>

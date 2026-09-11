@@ -5,18 +5,36 @@ import {
   Twitter, 
   Youtube, 
   Newspaper, 
-  MessageSquareShare 
+  MessageSquareShare,
+  LucideIcon
 } from 'lucide-react';
+import { ChannelStat } from '../../services/mockDataService';
+import { SocialChannel } from '../../types/monitor';
 
-export const ChannelDistribution: React.FC = () => {
-  const channels = [
-    { name: 'Instagram', icon: Instagram, count: 4820, percent: 34, color: 'text-pink-400', barBg: 'bg-pink-500' },
-    { name: 'TikTok', icon: Video, count: 3560, percent: 25, color: 'text-cyan-400', barBg: 'bg-cyan-500' },
-    { name: 'X / Twitter', icon: Twitter, count: 2840, percent: 20, color: 'text-sky-400', barBg: 'bg-sky-500' },
-    { name: 'YouTube', icon: Youtube, count: 1710, percent: 12, color: 'text-red-400', barBg: 'bg-red-500' },
-    { name: 'Portais & Notícias', icon: Newspaper, count: 850, percent: 6, color: 'text-emerald-400', barBg: 'bg-emerald-500' },
-    { name: 'Reddit & Fóruns', icon: MessageSquareShare, count: 500, percent: 3, color: 'text-orange-400', barBg: 'bg-orange-500' },
+const channelIcons: Record<SocialChannel, LucideIcon> = {
+  instagram: Instagram,
+  tiktok: Video,
+  twitter: Twitter,
+  youtube: Youtube,
+  news: Newspaper,
+  reddit: MessageSquareShare
+};
+
+interface ChannelDistributionProps {
+  channels?: ChannelStat[];
+}
+
+export const ChannelDistribution: React.FC<ChannelDistributionProps> = ({ channels }) => {
+  const defaultChannels: ChannelStat[] = [
+    { id: 'instagram', name: 'Instagram', count: 4820, percent: 34, color: 'text-pink-400', barBg: 'bg-pink-500' },
+    { id: 'tiktok', name: 'TikTok', count: 3560, percent: 25, color: 'text-cyan-400', barBg: 'bg-cyan-500' },
+    { id: 'twitter', name: 'X / Twitter', count: 2840, percent: 20, color: 'text-sky-400', barBg: 'bg-sky-500' },
+    { id: 'youtube', name: 'YouTube', count: 1710, percent: 12, color: 'text-red-400', barBg: 'bg-red-500' },
+    { id: 'news', name: 'Portais & Notícias', count: 850, percent: 6, color: 'text-emerald-400', barBg: 'bg-emerald-500' },
+    { id: 'reddit', name: 'Reddit & Fóruns', count: 500, percent: 3, color: 'text-orange-400', barBg: 'bg-orange-500' },
   ];
+
+  const displayList = channels && channels.length > 0 ? channels : defaultChannels;
 
   return (
     <div className="glass-panel rounded-2xl p-5">
@@ -30,13 +48,13 @@ export const ChannelDistribution: React.FC = () => {
           </p>
         </div>
         <span className="text-xs text-slate-400 font-medium">
-          6 Fontes Ativas
+          {displayList.length} Fontes Ativas
         </span>
       </div>
 
       <div className="space-y-3.5">
-        {channels.map((ch) => {
-          const Icon = ch.icon;
+        {displayList.map((ch) => {
+          const Icon = channelIcons[ch.id] || MessageSquareShare;
 
           return (
             <div key={ch.name} className="space-y-1.5">

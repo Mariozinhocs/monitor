@@ -7,16 +7,21 @@ import {
   BellRing, 
   BarChart3,
   Sliders,
-  Flame
+  Flame,
+  User,
+  Users
 } from 'lucide-react';
 
-export type NavTab = 'dashboard' | 'listening' | 'crisis' | 'insights' | 'benchmarks' | 'rules';
+export type NavTab = 'dashboard' | 'listening' | 'crisis' | 'insights' | 'benchmarks' | 'rules' | 'user-profile' | 'user-management';
 
 interface SidebarProps {
   currentTab: NavTab;
   onSelectTab: (tab: NavTab) => void;
   activeCrisisCount: number;
   totalMentionsCount: number;
+  isAdmin?: boolean;
+  userPlan?: string;
+  onOpenPlans?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -24,6 +29,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectTab,
   activeCrisisCount,
   totalMentionsCount,
+  isAdmin = true,
+  userPlan = 'Enterprise',
+  onOpenPlans
 }) => {
   const navItems = [
     {
@@ -63,7 +71,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'benchmarks' as NavTab,
       label: 'Concorrentes & Bench',
       icon: BarChart3,
-    }
+    },
+    {
+      id: 'user-profile' as NavTab,
+      label: 'Meu Perfil',
+      icon: User,
+    },
+    ...(isAdmin ? [{
+      id: 'user-management' as NavTab,
+      label: 'Gestão de Usuários',
+      icon: Users,
+      badge: 'Admin',
+      badgeColor: 'bg-rose-500/10 text-rose-300 border-rose-500/30'
+    }] : [])
   ];
 
   return (
@@ -120,10 +140,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden mb-2">
             <div className="bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-500 h-2 rounded-full w-[42%]"></div>
           </div>
-
           <p className="text-[11px] text-slate-400 leading-relaxed">
             IA detectou 1 tópico viral com potencial de crise nas últimas 2h.
           </p>
+        </div>
+
+        {/* Subscription Plan Card */}
+        <div className="rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-indigo-950/40 to-slate-900/80 p-4 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Plano de Acesso
+            </span>
+            <span className="rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] font-bold text-indigo-300 border border-indigo-500/30 capitalize">
+              {userPlan}
+            </span>
+          </div>
+
+          <p className="text-[11px] text-slate-400 leading-tight">
+            12 serviços e radar preditivo ativo.
+          </p>
+
+          <button
+            type="button"
+            onClick={onOpenPlans}
+            className="w-full py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-200 transition-all flex items-center justify-center gap-1.5"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+            <span>Ver Catálogo de Planos</span>
+          </button>
         </div>
 
       </div>

@@ -1,12 +1,23 @@
 <?php
 // Configuração de Conexão com o Banco de Dados Hostinger MySQL - Sentinela
 // Squad A-Team | Mario Henrique & Antigravity AI
+// Desenvolvido por Mario Henrique (mariozinhocs) - mariozinhocs@gmail.com
+// "si vis pacem para bellum"
 
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'u576215103_monitor');
-define('DB_USER', 'u576215103_monitor');
-define('DB_PASS', ';6Zz;>Xc');
+define('DB_NAME', 'u576215103_sentinela');
+define('DB_USER', 'u576215103_sentinela');
+define('DB_PASS', '/ASNY@dvi8u');
 define('DB_CHARSET', 'utf8mb4');
+
+function startSentinelaSession() {
+    if (session_status() === PHP_SESSION_NONE) {
+        ini_set('session.cookie_httponly', 1);
+        ini_set('session.use_only_cookies', 1);
+        ini_set('session.cookie_samesite', 'Lax');
+        session_start();
+    }
+}
 
 function getDbConnection() {
     static $pdo = null;
@@ -31,3 +42,4 @@ function getDbConnection() {
     }
     return $pdo;
 }
+

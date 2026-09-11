@@ -1,12 +1,13 @@
 import React from 'react';
-import { TOPICS_DATA } from '../../services/mockDataService';
-import { Hash, TrendingUp, AlertOctagon } from 'lucide-react';
+import { TopicItem, TOPICS_DATA } from '../../services/mockDataService';
+import { Hash, AlertOctagon } from 'lucide-react';
 
 interface TopicCloudProps {
+  topics?: TopicItem[];
   onSelectTopic?: (topic: string) => void;
 }
 
-export const TopicCloud: React.FC<TopicCloudProps> = ({ onSelectTopic }) => {
+export const TopicCloud: React.FC<TopicCloudProps> = ({ topics = TOPICS_DATA, onSelectTopic }) => {
   return (
     <div className="glass-panel rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
@@ -24,7 +25,7 @@ export const TopicCloud: React.FC<TopicCloudProps> = ({ onSelectTopic }) => {
       </div>
 
       <div className="flex flex-wrap gap-2.5">
-        {TOPICS_DATA.map((topic) => {
+        {topics.map((topic) => {
           const isCritical = topic.sentiment === 'critical';
           const isNegative = topic.sentiment === 'negative';
           const isPositive = topic.sentiment === 'positive';
