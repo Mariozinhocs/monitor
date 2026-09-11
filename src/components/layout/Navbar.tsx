@@ -1,5 +1,5 @@
 import React from 'react';
-import { Radio, Sparkles, Bell, RefreshCw, ShieldAlert, Download, Layers, User, LogOut, UserCheck, Target } from 'lucide-react';
+import { Radio, Sparkles, Bell, RefreshCw, ShieldAlert, Download, Layers, User, LogOut, UserCheck, Target, Instagram } from 'lucide-react';
 import { BrandOverview } from '../../types/monitor';
 import { UserProfile } from '../../types/user';
 

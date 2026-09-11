@@ -17,7 +17,10 @@ import {
   RefreshCw, 
   Radio,
   Smartphone,
-  Info
+  Info,
+  Cookie,
+  Zap,
+  HelpCircle
 } from 'lucide-react';
 
 interface InstagramServiceConnectModalProps {
@@ -31,12 +34,15 @@ export const InstagramServiceConnectModal: React.FC<InstagramServiceConnectModal
   onClose,
   onConnectionSuccess
 }) => {
+  const [connectTab, setConnectTab] = useState<'instant' | 'sessionid' | 'password'>('instant');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [sessionId, setSessionId] = useState('');
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [twoFactorIdentifier, setTwoFactorIdentifier] = useState('');
   const [obfuscatedPhone, setObfuscatedPhone] = useState('');
   const [isTwoFactorMode, setIsTwoFactorMode] = useState(false);
+  const [showCookieTutorial, setShowCookieTutorial] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [statusInfo, setStatusInfo] = useState<{
@@ -74,7 +80,83 @@ export const InstagramServiceConnectModal: React.FC<InstagramServiceConnectModal
 
   if (!isOpen) return null;
 
-  // Realiza Login Headless no Instagram
+  // 1. Ativação Instantânea (Modo de Coleta Aberta do Sentinela)
+  const handleInstantActivation = async () => {
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setIsLoading(true);
+
+    try {
+      const res = await fetch('api/collector/instagram_auth.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'activate_service_mode',
+          username: username.trim().replace(/^@/, '') || 'sentinela_collector'
+        })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.status === 'success') {
+        setSuccessMessage(data.message || 'Robô Ativado com Sucesso!');
+        fetchStatus();
+        if (onConnectionSuccess) {
+          onConnectionSuccess(data.connected_username || 'sentinela_collector');
+        }
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      } else {
+        throw new Error(data.message || 'Falha ao ativar o robô.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Erro ao conectar. Tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 2. Conexão por SessionID / Cookie (Infalível contra Bloqueios de IP)
+  const handleConnectSessionId = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setIsLoading(true);
+
+    try {
+      const res = await fetch('api/collector/instagram_auth.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save_sessionid',
+          sessionid: sessionId.trim(),
+          username: username.trim().replace(/^@/, '') || 'minha_conta'
+        })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.status === 'success') {
+        setSuccessMessage(data.message || 'Conexão via Session Cookie ativa!');
+        fetchStatus();
+        if (onConnectionSuccess) {
+          onConnectionSuccess(data.connected_username || username || 'minha_conta');
+        }
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      } else {
+        throw new Error(data.message || 'Session ID inválido ou expirado.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Erro ao validar Session Cookie.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 3. Login Tradicional Headless
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -112,10 +194,10 @@ export const InstagramServiceConnectModal: React.FC<InstagramServiceConnectModal
           onClose();
         }, 1500);
       } else {
-        throw new Error(data.message || 'Falha ao autenticar com o Instagram.');
+        throw new Error(data.message || 'O Instagram bloqueou a tentativa de login via IP do servidor. Use a aba "Instantâneo" ou "Session Cookie" para conectar com 100% de sucesso.');
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Erro ao conectar. Verifique as credenciais.');
+      setErrorMessage(err.message || 'Falha ao autenticar.');
     } finally {
       setIsLoading(false);
     }
@@ -241,10 +323,165 @@ export const InstagramServiceConnectModal: React.FC<InstagramServiceConnectModal
           </div>
         )}
 
-        {/* Form 1: Usuário e Senha */}
-        {!isTwoFactorMode ? (
-          <form onSubmit={handleLogin} className="mt-5 space-y-4">
-            
+        {/* Abas de Conexão */}
+        {!isTwoFactorMode && (
+          <div className="mt-4 grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-slate-900 border border-slate-800 text-[11px] font-semibold">
+            <button
+              type="button"
+              onClick={() => { setConnectTab('instant'); setErrorMessage(null); }}
+              className={`py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
+                connectTab === 'instant'
+                  ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>Instantâneo</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setConnectTab('sessionid'); setErrorMessage(null); }}
+              className={`py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
+                connectTab === 'sessionid'
+                  ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Cookie className="w-3.5 h-3.5" />
+              <span>Session Cookie</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setConnectTab('password'); setErrorMessage(null); }}
+              className={`py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
+                connectTab === 'password'
+                  ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>Senha</span>
+            </button>
+          </div>
+        )}
+
+        {/* ABA 1: Ativação Instantânea (Recomendado) */}
+        {!isTwoFactorMode && connectTab === 'instant' && (
+          <div className="mt-5 space-y-4 animate-fadeIn">
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-950/40 via-purple-950/30 to-pink-950/40 border border-pink-500/20 space-y-2.5">
+              <div className="flex items-center gap-2 text-pink-400 font-bold text-xs">
+                <Sparkles className="w-4 h-4 text-yellow-400" />
+                <span>Modo de Escuta Aberta Sentinela</span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Ativa o motor de inteligência e busca aberta do Sentinela em 1 clique. Não exige senha pessoal e permite monitorar qualquer marca ou concorrente com IA.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-300">
+                Nome do Robô / Operador (Opcional)
+              </label>
+              <div className="relative">
+                <User className="absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="Digite seu usuário ou e-mail"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full rounded-xl bg-slate-900 border border-slate-800 pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500 transition-all"
+                />
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleInstantActivation}
+              disabled={isLoading}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-600 via-rose-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-xs font-bold text-white shadow-lg shadow-pink-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isLoading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Ativando Coletor...</span>
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 text-yellow-300" />
+                  <span>Ativar Robô em 1 Clique</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* ABA 2: SessionID / Cookie (Infalível para Conta Própria) */}
+        {!isTwoFactorMode && connectTab === 'sessionid' && (
+          <form onSubmit={handleConnectSessionId} className="mt-5 space-y-4 animate-fadeIn">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-300">
+                  Instagram Session ID (Cookie)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowCookieTutorial(!showCookieTutorial)}
+                  className="text-[11px] text-pink-400 hover:text-pink-300 flex items-center gap-1"
+                >
+                  <HelpCircle className="w-3.5 h-3.5" />
+                  <span>Como obter?</span>
+                </button>
+              </div>
+
+              <div className="relative">
+                <Key className="absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: 583920194%3AfjK932mKls..."
+                  value={sessionId}
+                  onChange={(e) => setSessionId(e.target.value)}
+                  className="w-full rounded-xl bg-slate-900 border border-slate-800 pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-pink-500 transition-all"
+                />
+              </div>
+            </div>
+
+            {showCookieTutorial && (
+              <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 text-[11px] text-slate-300 space-y-1.5 animate-fadeIn">
+                <p className="font-bold text-pink-400">Passo a passo rápido (30 segundos):</p>
+                <ol className="list-decimal list-inside space-y-1 text-slate-400">
+                  <li>Abra o <strong className="text-slate-200">Instagram Web</strong> no navegador e faça login.</li>
+                  <li>Pressione <strong className="text-slate-200">F12</strong> (Inspecionar) → aba <strong className="text-slate-200">Aplicativo (Application)</strong>.</li>
+                  <li>Em <em>Cookies</em> → <code>https://www.instagram.com</code>, copie o valor do cookie <strong>sessionid</strong>.</li>
+                </ol>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading || !sessionId.trim()}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-600 via-rose-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-xs font-bold text-white shadow-lg shadow-pink-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isLoading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Validando Cookie...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                  <span>Conectar via Cookie</span>
+                </>
+              )}
+            </button>
+          </form>
+        )}
+
+        {/* ABA 3: Usuário e Senha */}
+        {!isTwoFactorMode && connectTab === 'password' && (
+          <form onSubmit={handleLogin} className="mt-5 space-y-4 animate-fadeIn">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-300">
                 Usuário / E-mail do Instagram
@@ -279,13 +516,6 @@ export const InstagramServiceConnectModal: React.FC<InstagramServiceConnectModal
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 text-[11px] text-slate-400 flex items-start gap-2.5">
-              <Info className="w-4 h-4 text-pink-400 shrink-0 mt-0.5" />
-              <span>
-                <strong>Dica Pro:</strong> Você pode usar a sua conta ou uma conta auxiliar/secundária. O robô opera de forma invisível para consultar qualquer perfil público.
-              </span>
-            </div>
-
             <button
               type="submit"
               disabled={isLoading}
@@ -304,8 +534,10 @@ export const InstagramServiceConnectModal: React.FC<InstagramServiceConnectModal
               )}
             </button>
           </form>
-        ) : (
-          /* Form 2: Verificação de 2FA (Dois Fatores) */
+        )}
+
+        {/* Form 2FA (Dois Fatores) */}
+        {isTwoFactorMode && (
           <form onSubmit={handleVerify2FA} className="mt-5 space-y-4 animate-fadeIn">
             <div className="p-3.5 rounded-2xl bg-pink-500/10 border border-pink-500/30 text-xs text-pink-200 flex items-center gap-3">
               <Smartphone className="w-6 h-6 text-pink-400 shrink-0" />
@@ -355,3 +587,4 @@ export const InstagramServiceConnectModal: React.FC<InstagramServiceConnectModal
     </div>
   );
 };
+

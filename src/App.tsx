@@ -375,6 +375,7 @@ export function App() {
         onOpenMonitorSetup={() => setIsMonitorSetupOpen(true)}
         onOpenPlans={() => setIsPlansModalOpen(true)}
         onOpenInstagramConnect={() => setIsInstagramConnectOpen(true)}
+        onOpenProfile={() => setCurrentTab('user-profile')}
         onNavigateTab={(tab) => setCurrentTab(tab as NavTab)}
         onLogout={handleLogout}
       />

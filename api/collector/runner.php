@@ -24,8 +24,10 @@ $allNewMentions = [];
 try {
     $pdo = getDbConnection();
 
-    // 1. Executa coleta no Instagram se selecionado
-    if (in_array('instagram', $channels) || empty($channels)) {
+    // 1. Executa coleta no Instagram ou aceita menções enviadas diretamente por coletor local
+    if (!empty($input['mentions']) && is_array($input['mentions'])) {
+        $allNewMentions = $input['mentions'];
+    } else if (in_array('instagram', $channels) || empty($channels)) {
         $igMentions = InstagramOpenCollector::search($term, $sensitiveTerms);
         $allNewMentions = array_merge($allNewMentions, $igMentions);
     }

@@ -23,3 +23,8 @@ deploy_package
 *.njsproj
 *.sln
 *.sw?
+ig_browser_session/
+*.png
+!public/*.png
+!src/**/*.png
+upload_runner.ps1
