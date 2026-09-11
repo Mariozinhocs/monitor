@@ -177,10 +177,40 @@ export function App() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  // Carrega menções reais persistidas no MySQL em produção
+  const loadRealMentions = async () => {
+    try {
+      const persisted = await fetchPersistedMentions();
+      if (persisted && persisted.length > 0) {
+        setMentions(persisted);
+        
+        // Atualiza métricas do brand com base no banco real
+        const posCount = persisted.filter(m => m.sentiment === 'positive').length;
+        const negCount = persisted.filter(m => m.sentiment === 'negative' || m.sentiment === 'critical').length;
+        const repScore = persisted.length > 0 ? Math.round((posCount / persisted.length) * 100) : 75;
+        const crisisCount = persisted.filter(m => m.riskLevel === 'critical').length;
+
+        setBrand(prev => ({
+          ...prev,
+          totalMentions: persisted.length,
+          reputationScore: repScore,
+          activeCrisisCount: crisisCount
+        }));
+      }
+    } catch (e) {
+      console.warn('Erro ao sincronizar menções reais:', e);
+    }
+  };
+
+  // Executa busca no banco ao inicializar a aplicação
+  useEffect(() => {
+    loadRealMentions();
+  }, []);
+
   // Varredura Radar em Tempo Real com Coletor Aberto do Instagram
   const handleTriggerScan = async () => {
     setIsScanning(true);
-    showToast(`📡 Radar Sentinela ativado: Varrendo Instagram e redes públicas para "${monitorConfig.brandName}"...`);
+    showToast(`📡 Radar Sentinela ativado: Varrendo redes sociais para "${monitorConfig.brandName}"...`);
 
     try {
       const realMentions = await runSocialListeningScan(
@@ -189,27 +219,16 @@ export function App() {
         ['instagram']
       );
 
+      // Recarrega o banco com as novas postagens
+      await loadRealMentions();
+
       if (realMentions.length > 0) {
-        setMentions(prev => [...realMentions, ...prev]);
-        setBrand(prev => ({
-          ...prev,
-          totalMentions: prev.totalMentions + realMentions.length,
-          reputationScore: Math.min(100, prev.reputationScore + 1)
-        }));
-        showToast(`✅ Varredura concluída: ${realMentions.length} postagens públicas do Instagram capturadas e indexadas!`);
+        showToast(`✅ Varredura concluída: ${realMentions.length} postagens capturadas e indexadas no banco!`);
       } else {
-        const newLiveMention = generateLiveScanMention(monitorConfig);
-        setMentions(prev => [newLiveMention, ...prev]);
-        setBrand(prev => ({
-          ...prev,
-          totalMentions: prev.totalMentions + 1,
-          reputationScore: Math.min(100, prev.reputationScore + 1)
-        }));
-        showToast(`✅ Varredura concluída: 1 nova menção capturada e indexada com IA para "${monitorConfig.brandName}"!`);
+        showToast(`✅ Varredura concluída: Feed sincronizado com os dados mais recentes.`);
       }
     } catch (err) {
-      const newLiveMention = generateLiveScanMention(monitorConfig);
-      setMentions(prev => [newLiveMention, ...prev]);
+      await loadRealMentions();
       showToast(`✅ Varredura finalizada para "${monitorConfig.brandName}"!`);
     } finally {
       setIsScanning(false);
@@ -437,7 +456,11 @@ export function App() {
                   </button>
                 </div>
 
-                <MentionsFeed mentions={mentions.slice(0, 3)} />
+                <MentionsFeed 
+                  mentions={mentions.slice(0, 3)} 
+                  onRefresh={loadRealMentions}
+                  isRefreshing={isScanning}
+                />
               </div>
 
             </div>
@@ -461,6 +484,8 @@ export function App() {
                 mentions={mentions}
                 selectedTopicFilter={selectedTopicFilter}
                 onClearTopicFilter={() => setSelectedTopicFilter(undefined)}
+                onRefresh={loadRealMentions}
+                isRefreshing={isScanning}
               />
             </div>
           )}

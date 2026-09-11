@@ -11,19 +11,24 @@ import {
   Newspaper, 
   MessageSquareShare,
   SlidersHorizontal,
-  Flame
+  Flame,
+  RefreshCw
 } from 'lucide-react';
 
 interface MentionsFeedProps {
   mentions: Mention[];
   selectedTopicFilter?: string;
   onClearTopicFilter?: () => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 export const MentionsFeed: React.FC<MentionsFeedProps> = ({
   mentions,
   selectedTopicFilter,
   onClearTopicFilter,
+  onRefresh,
+  isRefreshing = false
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedChannel, setSelectedChannel] = useState<SocialChannel | 'all'>('all');
@@ -97,6 +102,19 @@ export const MentionsFeed: React.FC<MentionsFeedProps> = ({
             <Flame className={`h-3.5 w-3.5 ${onlyCrises ? 'text-rose-400 animate-pulse' : 'text-slate-400'}`} />
             <span>Apenas Alertas de Crise</span>
           </button>
+
+          {/* Botão de Atualizar do Banco */}
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold border border-indigo-500/40 bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30 transition-all whitespace-nowrap"
+              title="Sincronizar com banco de dados MySQL"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin text-indigo-400' : 'text-indigo-400'}`} />
+              <span>{isRefreshing ? 'Sincronizando...' : 'Atualizar Feed'}</span>
+            </button>
+          )}
 
           {/* Seletor de Sentimento */}
           <select
