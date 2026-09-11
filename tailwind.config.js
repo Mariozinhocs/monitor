@@ -8,6 +8,9 @@ export default {
   theme: {
     extend: {
       colors: {
+        slate: {
+          950: '#0b0f19',
+        },
         sentinela: {
           50: '#f0f4ff',
           100: '#e0eaff',
@@ -24,6 +27,10 @@ export default {
           rose: '#f43f5e',
           violet: '#8b5cf6',
         }
+      },
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        heading: ['Outfit', 'sans-serif'],
       },
       animation: {
         'pulse-glow': 'pulseGlow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
