@@ -84,18 +84,22 @@ export function isPersonalProfile(brandName: string): boolean {
   );
 }
 
-export function generateBrandDataset(config: BrandMonitorConfig) {
-  const brandName = config.brandName || 'Mario Henrique (@mariozinhocs)';
+export function generateBrandDataset(config?: Partial<BrandMonitorConfig> | null) {
+  const brandName = config?.brandName || 'Mario Henrique (@mariozinhocs)';
   const isUrban = isPublicSectorOrUrban(brandName);
   const isPersonal = isPersonalProfile(brandName);
 
-  const keywords = config.primaryKeywords.length > 0
-    ? config.primaryKeywords
+  const keywords = (Array.isArray(config?.primaryKeywords) && config!.primaryKeywords.length > 0)
+    ? config!.primaryKeywords
     : [brandName, `@${brandName.replace(/\s+/g, '')}`, '#SentinelaAI', 'Inovação'];
 
-  const sensitive = config.sensitiveCrisisTerms.length > 0
-    ? config.sensitiveCrisisTerms
+  const sensitive = (Array.isArray(config?.sensitiveCrisisTerms) && config!.sensitiveCrisisTerms.length > 0)
+    ? config!.sensitiveCrisisTerms
     : ['Crítica', 'Fake News', 'Reclamação', 'Golpe', 'Vulnerabilidade'];
+
+  const activeChannels = (Array.isArray(config?.monitoredChannels) && config!.monitoredChannels.length > 0)
+    ? config!.monitoredChannels
+    : ['instagram', 'tiktok', 'twitter', 'youtube', 'news', 'reddit'];
 
   // 1. BRAND OVERVIEW METRICS
   const brand: BrandOverview = {
@@ -577,7 +581,7 @@ export function generateBrandDataset(config: BrandMonitorConfig) {
   ];
 
   // Filter channels based on monitored config
-  const filteredChannels = channelList.filter(ch => config.monitoredChannels.includes(ch.id));
+  const filteredChannels = channelList.filter(ch => activeChannels.includes(ch.id));
   const totalPostCount = filteredChannels.reduce((acc, c) => acc + c.count, 0);
   const channels = filteredChannels.map(c => ({
     ...c,
